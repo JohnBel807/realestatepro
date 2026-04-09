@@ -1,13 +1,10 @@
 import React from 'react'
-// src/pages/DashboardPage.jsx
-// Dashboard del vendedor: mis propiedades + formulario de creación con React Hook Form
-
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Pencil, Trash2, Eye, Crown, AlertCircle } from 'lucide-react'
+import { Plus, Pencil, Trash2, Eye, Crown, AlertCircle, Clock } from 'lucide-react'
 import { useAuthStore, usePropertiesStore } from '../store/useStore'
 import { subscriptionAPI } from '../lib/api'
 import { formatPrice } from '../lib/formatters'
@@ -27,7 +24,7 @@ const propertySchema = z.object({
   neighborhood: z.string().optional(),
 })
 
-// ─── Form Component ───────────────────────────────────────────────────────────
+// ─── Property Form ────────────────────────────────────────────────────────────
 function PropertyForm({ onSuccess, onCancel }) {
   const { createProperty } = usePropertiesStore()
   const [serverError, setServerError] = useState(null)
@@ -54,13 +51,13 @@ function PropertyForm({ onSuccess, onCancel }) {
   }
 
   const Field = ({ name, label, type = 'text', ...rest }) => (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       <label className="text-xs font-medium text-stone-700">{label}</label>
       <input
         type={type}
         {...register(name)}
         className={`text-sm px-3 py-2 border rounded-lg outline-none transition-colors bg-white
-          ${errors[name] ? 'border-rose-400 focus:border-rose-500' : 'border-stone-200 focus:border-amber-400'}`}
+          ${errors[name] ? 'border-rose-400' : 'border-stone-200 focus:border-amber-400'}`}
         {...rest}
       />
       {errors[name] && (
@@ -74,19 +71,16 @@ function PropertyForm({ onSuccess, onCancel }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {serverError && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-3 rounded-lg flex items-center gap-2">
-          <AlertCircle size={15} /> {serverError}
+        <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-3 rounded-lg">
+          <AlertCircle size={15} className="shrink-0" /> {serverError}
         </div>
       )}
 
-      {/* General */}
       <section className="bg-stone-50 rounded-xl p-4 border border-stone-200">
-        <h3 className="text-[10px] font-medium uppercase tracking-wider text-stone-500 mb-3">
-          Información general
-        </h3>
+        <h3 className="text-[10px] font-medium uppercase tracking-wider text-stone-500 mb-3">Información general</h3>
         <div className="space-y-3">
           <Field name="title" label="Título del anuncio *" placeholder="Ej. Apartamento moderno en Chapinero Alto" />
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-stone-700">Descripción</label>
             <textarea
               {...register('description')}
@@ -95,7 +89,7 @@ function PropertyForm({ onSuccess, onCancel }) {
               className="text-sm px-3 py-2 border border-stone-200 rounded-lg outline-none focus:border-amber-400 resize-none bg-white"
             />
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-stone-700">Tipo de propiedad *</label>
             <select
               {...register('property_type')}
@@ -111,11 +105,8 @@ function PropertyForm({ onSuccess, onCancel }) {
         </div>
       </section>
 
-      {/* Precio y métricas */}
       <section className="bg-stone-50 rounded-xl p-4 border border-stone-200">
-        <h3 className="text-[10px] font-medium uppercase tracking-wider text-stone-500 mb-3">
-          Precio y métricas
-        </h3>
+        <h3 className="text-[10px] font-medium uppercase tracking-wider text-stone-500 mb-3">Precio y métricas</h3>
         <div className="grid grid-cols-2 gap-3">
           <Field name="price" label="Precio (COP) *" type="number" placeholder="450000000" />
           <Field name="area_m2" label="Área m² *" type="number" placeholder="85" />
@@ -125,11 +116,8 @@ function PropertyForm({ onSuccess, onCancel }) {
         </div>
       </section>
 
-      {/* Ubicación */}
       <section className="bg-stone-50 rounded-xl p-4 border border-stone-200">
-        <h3 className="text-[10px] font-medium uppercase tracking-wider text-stone-500 mb-3">
-          Ubicación
-        </h3>
+        <h3 className="text-[10px] font-medium uppercase tracking-wider text-stone-500 mb-3">Ubicación</h3>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <Field name="city" label="Ciudad *" placeholder="Bogotá" />
@@ -140,7 +128,11 @@ function PropertyForm({ onSuccess, onCancel }) {
       </section>
 
       <div className="flex gap-3 justify-end">
-        <button type="button" onClick={onCancel} className="px-4 py-2 text-sm border border-stone-200 rounded-lg hover:bg-stone-100 transition-colors">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 text-sm border border-stone-200 rounded-lg hover:bg-stone-100 transition-colors"
+        >
           Cancelar
         </button>
         <button
@@ -155,6 +147,13 @@ function PropertyForm({ onSuccess, onCancel }) {
   )
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function getTrialDaysRemaining(user) {
+  if (!user?.trial_ends_at) return 0
+  const delta = new Date(user.trial_ends_at) - new Date()
+  return Math.max(0, Math.ceil(delta / (1000 * 60 * 60 * 24)))
+}
+
 // ─── Dashboard Page ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { user, subscription } = useAuthStore()
@@ -164,6 +163,13 @@ export default function DashboardPage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false)
 
   useEffect(() => { fetchMyProperties() }, [])
+
+  // ── Lógica de acceso ──────────────────────────────────────────────────────
+  const trialDays = getTrialDaysRemaining(user)
+  const trialActive = trialDays > 0
+  const hasActiveSub = subscription?.status === 'active'
+  const canPublish = trialActive || hasActiveSub   // ← trial O suscripción activa
+  const trialExpired = !trialActive && !hasActiveSub
 
   const handleUpgrade = async (planType) => {
     setCheckoutLoading(true)
@@ -175,79 +181,99 @@ export default function DashboardPage() {
     }
   }
 
-  const noSubscription = !subscription || subscription.status !== 'active'
-
   return (
     <main className="max-w-6xl mx-auto px-4 py-8">
-      {/* Header */}
+
+      {/* ── Header ── */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="font-serif text-2xl font-medium">Hola, {user?.full_name?.split(' ')[0]} 👋</h1>
+          <h1 className="font-serif text-2xl font-medium">
+            Hola, {user?.full_name?.split(' ')[0]} 👋
+          </h1>
           <p className="text-sm text-stone-500 mt-0.5">
             {myProperties.length} inmueble{myProperties.length !== 1 ? 's' : ''} publicado{myProperties.length !== 1 ? 's' : ''}
           </p>
         </div>
         <button
           onClick={() => setShowForm(true)}
-          disabled={noSubscription}
-          className="flex items-center gap-2 px-4 py-2 bg-stone-900 text-white rounded-lg text-sm font-medium hover:bg-stone-800 disabled:opacity-40 transition-colors"
+          disabled={!canPublish}
+          className="flex items-center gap-2 px-4 py-2 bg-stone-900 text-white rounded-lg text-sm font-medium hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           <Plus size={15} /> Nuevo inmueble
         </button>
       </div>
 
-      {/* Subscription banner */}
-      {noSubscription && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+      {/* ── Banner: Trial activo ── */}
+      {trialActive && !hasActiveSub && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Crown size={18} className="text-amber-600" />
+            <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+              <Clock size={16} className="text-amber-600" />
+            </div>
             <div>
-              <p className="text-sm font-medium text-amber-900">Necesitas una suscripción para publicar</p>
-              <p className="text-xs text-amber-700 mt-0.5">Elige un plan para empezar a publicar propiedades</p>
+              <p className="text-sm font-medium text-amber-900">
+                Período de prueba activo — {trialDays} día{trialDays !== 1 ? 's' : ''} restante{trialDays !== 1 ? 's' : ''}
+              </p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Puedes publicar propiedades libremente durante el trial. Elige un plan antes de que expire.
+              </p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <button
+            onClick={() => navigate('/pricing')}
+            className="shrink-0 text-xs font-medium bg-amber-500 hover:bg-amber-600 text-stone-900 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+          >
+            Ver planes →
+          </button>
+        </div>
+      )}
+
+      {/* ── Banner: Trial expirado / sin suscripción ── */}
+      {trialExpired && (
+        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 mb-6 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Crown size={18} className="text-rose-500 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-rose-900">Tu período de prueba ha expirado</p>
+              <p className="text-xs text-rose-700 mt-0.5">
+                Elige un plan para volver a publicar propiedades. Tus anuncios están guardados.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 shrink-0">
             {['basic', 'pro'].map((plan) => (
               <button
                 key={plan}
                 onClick={() => handleUpgrade(plan)}
                 disabled={checkoutLoading}
-                className="px-3 py-1.5 text-xs font-medium bg-amber-500 hover:bg-amber-600 text-stone-900 rounded-lg transition-colors capitalize"
+                className="px-3 py-1.5 text-xs font-medium bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition-colors capitalize disabled:opacity-50"
               >
                 {plan}
               </button>
             ))}
+            <button
+              onClick={() => navigate('/pricing')}
+              className="px-3 py-1.5 text-xs font-medium border border-rose-300 text-rose-700 hover:bg-rose-100 rounded-lg transition-colors"
+            >
+              Ver todos
+            </button>
           </div>
         </div>
       )}
 
-      {/* Subscription / Trial info */}
-      {!noSubscription && (
+      {/* ── Badge: Suscripción activa ── */}
+      {hasActiveSub && (
         <div className="flex items-center gap-2 mb-6 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 w-fit">
           <Crown size={13} className="text-emerald-500" />
           <span className="text-xs font-medium capitalize">Plan {subscription.plan_type} activo</span>
-          <span className="text-xs text-emerald-500">·</span>
+          <span className="text-xs text-emerald-400">·</span>
           <span className="text-xs text-emerald-600">
             {myProperties.length} / {subscription.max_properties === -1 ? '∞' : subscription.max_properties} propiedades
           </span>
         </div>
       )}
-      {noSubscription && (() => {
-        const days = user?.trial_ends_at
-          ? Math.max(0, Math.ceil((new Date(user.trial_ends_at) - new Date()) / 86400000))
-          : 0
-        return days > 0 ? (
-          <div className="flex items-center gap-2 mb-6 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 w-fit">
-            <span className="text-xs">⏱</span>
-            <span className="text-xs font-medium">Trial activo — {days} días restantes</span>
-            <button onClick={() => navigate('/pricing')} className="text-xs underline text-amber-600 hover:text-amber-800 ml-1">
-              Elegir plan
-            </button>
-          </div>
-        ) : null
-      })()}
 
-      {/* Form modal-like */}
+      {/* ── Formulario ── */}
       {showForm && (
         <div className="mb-8 bg-white rounded-2xl border border-stone-200 p-6">
           <h2 className="font-serif text-xl font-medium mb-5">Publicar propiedad</h2>
@@ -258,24 +284,34 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Properties table */}
+      {/* ── Tabla de propiedades ── */}
       <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-stone-100">
+        <div className="px-5 py-4 border-b border-stone-100 flex items-center justify-between">
           <h2 className="font-medium text-stone-900 text-sm">Mis inmuebles</h2>
+          {canPublish && myProperties.length === 0 && (
+            <p className="text-xs text-stone-400">Aún no tienes inmuebles — ¡publica el primero!</p>
+          )}
         </div>
 
         {isLoading ? (
           <div className="p-8 text-center text-stone-400 text-sm">Cargando…</div>
         ) : myProperties.length === 0 ? (
           <div className="p-10 text-center">
-            <p className="text-stone-400 text-sm">Aún no tienes inmuebles publicados.</p>
-            <button
-              onClick={() => setShowForm(true)}
-              disabled={noSubscription}
-              className="mt-3 text-xs text-amber-600 underline disabled:opacity-40"
-            >
-              Publicar mi primer inmueble
-            </button>
+            <p className="text-4xl mb-3">🏠</p>
+            <p className="text-stone-500 text-sm font-medium mb-1">Sin propiedades publicadas</p>
+            <p className="text-stone-400 text-xs mb-4">
+              {canPublish
+                ? 'Haz click en "Nuevo inmueble" para publicar tu primer anuncio.'
+                : 'Activa un plan para empezar a publicar.'}
+            </p>
+            {canPublish && (
+              <button
+                onClick={() => setShowForm(true)}
+                className="text-xs text-amber-600 underline hover:text-amber-800"
+              >
+                Publicar ahora →
+              </button>
+            )}
           </div>
         ) : (
           <table className="w-full text-sm">
@@ -295,8 +331,10 @@ export default function DashboardPage() {
                   <td className="px-4 py-3 text-stone-600 font-serif">
                     {formatPrice(prop.price, prop.price_currency)}
                   </td>
-                  <td className="px-4 py-3 text-stone-500 flex items-center gap-1">
-                    <Eye size={12} /> {(prop.views_count ?? 0).toLocaleString('es-CO')}
+                  <td className="px-4 py-3 text-stone-500">
+                    <span className="flex items-center gap-1">
+                      <Eye size={12} /> {(prop.views_count ?? 0).toLocaleString('es-CO')}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
@@ -308,7 +346,9 @@ export default function DashboardPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-stone-400 text-xs">
-                    {new Date(prop.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {new Date(prop.created_at).toLocaleDateString('es-CO', {
+                      day: 'numeric', month: 'short', year: 'numeric'
+                    })}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1">

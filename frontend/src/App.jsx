@@ -17,11 +17,14 @@ import DashboardPage from './pages/DashboardPage'
 import PricingPage from './pages/PricingPage'
 
 export default function App() {
-  const { token, fetchSubscription } = useAuthStore()
+  const { token, fetchSubscription, refreshUser } = useAuthStore()
 
-  // Rehidratar suscripción al recargar si el usuario ya tiene token
+  // Rehidratar usuario y suscripción al recargar
   useEffect(() => {
-    if (token) fetchSubscription()
+    if (token) {
+      refreshUser()        // actualiza trial_ends_at y datos del user
+      fetchSubscription()  // actualiza estado de suscripción
+    }
   }, [])
 
   return (

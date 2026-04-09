@@ -46,6 +46,14 @@ export const useAuthStore = create(
         }
       },
 
+      // Refresh user data (incluye trial_ends_at actualizado)
+      refreshUser: async () => {
+        try {
+          const { data: user } = await authAPI.me()
+          set({ user })
+        } catch {}
+      },
+
       // Logout
       logout: () => {
         localStorage.removeItem('access_token')
