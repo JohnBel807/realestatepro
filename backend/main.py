@@ -21,7 +21,9 @@ from auth import (
 )
 
 # ─── App Init ────────────────────────────────────────────────────────────────
-models.Base.metadata.create_all(bind=engine)
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="RealEstate Pro API",
@@ -31,38 +33,26 @@ app = FastAPI(
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_test_...")
 
-# Construir lista de orígenes permitidos dinámicamente
-_frontend_url = os.getenv("FRONTEND_URL", "")
-_allowed_origins = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "https://realestatepro-nine.vercel.app", # Tu URL actual de Vercel
-]
-# Agregar la URL de producción si está definida
-# --- App Init ---
-models.Base.metadata.create_all(bind=engine)
-
-app = FastAPI(
-    title="RealEstate Pro API",
-    version="1.0.0",
-    description="Portal inmobiliario — Backend API"
-)
-
-# LISTA FIJA DE ORÍGENES (Sin lógica compleja que pueda fallar)
-_allowed_origins = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "https://realestatepro-nine.vercel.app",  # Tu URL de Vercel
-]
-
+# CORS — permite todos los orígenes de Vercel + localhost
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_allowed_origins,
-    allow_credentials=True,
+    allow_origins=["*"],          # En producción estable puedes restringir
+    allow_credentials=False,      # Debe ser False cuando allow_origins=["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+async def startup_event():
+    """Crea tablas y loguea diagnóstico al arrancar."""
+    try:
+        models.Base.metadata.create_all(bind=engine)
+        logger.info("✅ Tablas creadas/verificadas correctamente")
+    except Exception as e:
+        logger.error(f"❌ Error creando tablas: {e}")
+    logger.info(f"🌐 FRONTEND_URL: {os.getenv('FRONTEND_URL', 'no definida')}")
+    logger.info(f"🗄️  DATABASE_URL definida: {bool(os.getenv('DATABASE_URL'))}")
+    logger.info(f"🔑 JWT_SECRET_KEY definida: {bool(os.getenv('JWT_SECRET_KEY'))}")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
@@ -93,13 +83,19 @@ def require_active_subscription(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ) -> models.User:
-    """Middleware: verifica suscripción activa antes de publicar propiedades."""
+    """Middleware: verifica suscripción activa O trial vigente antes de publicar."""
+    # Permitir si está en período de trial
+    if crud.is_trial_active(current_user):
+        return current_user
+    # Permitir si tiene suscripción activa
     subscription = crud.get_active_subscription(db, user_id=current_user.id)
     if not subscription:
+        days = crud.trial_days_remaining(current_user)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Se requiere una suscripción activa para publicar propiedades. "
-                   "Visita /pricing para ver nuestros planes."
+            detail="Tu período de prueba ha expirado. Visita /pricing para elegir un plan."
+                   if days == 0 else
+                   f"Se requiere suscripción activa. Te quedan {days} días de prueba."
         )
     return current_user
 
@@ -133,6 +129,16 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 @app.get("/auth/me", response_model=schemas.UserOut, tags=["Auth"])
 def me(current_user: models.User = Depends(get_current_user)):
     return current_user
+
+
+@app.get("/auth/trial-status", tags=["Auth"])
+def trial_status(current_user: models.User = Depends(get_current_user)):
+    """Retorna el estado del trial del usuario actual."""
+    return {
+        "trial_active": crud.is_trial_active(current_user),
+        "trial_days_remaining": crud.trial_days_remaining(current_user),
+        "trial_ends_at": current_user.trial_ends_at,
+    }
 
 
 # ─── Properties Routes ────────────────────────────────────────────────────────

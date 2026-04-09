@@ -23,6 +23,7 @@ class SubscriptionStatus(str, enum.Enum):
     inactive = "inactive"
     canceled = "canceled"
     past_due = "past_due"
+    trialing = "trialing"
 
 
 class PropertyType(str, enum.Enum):
@@ -45,10 +46,10 @@ class User(Base):
     avatar_url = Column(String(500), nullable=True)
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
+    trial_ends_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # Relationships
     properties = relationship("Property", back_populates="owner", cascade="all, delete-orphan")
     subscription = relationship("Subscription", back_populates="user", uselist=False)
 
@@ -61,7 +62,7 @@ class Property(Base):
     title = Column(String(500), nullable=False, index=True)
     description = Column(Text, nullable=True)
     price = Column(Float, nullable=False, index=True)
-    price_currency = Column(String(3), default="COP")  # COP, USD
+    price_currency = Column(String(3), default="COP")
     area_m2 = Column(Float, nullable=False)
     bedrooms = Column(Integer, default=0)
     bathrooms = Column(Integer, default=0)
@@ -70,36 +71,30 @@ class Property(Base):
     total_floors = Column(Integer, nullable=True)
     property_type = Column(Enum(PropertyType), default=PropertyType.apartment)
 
-    # Location
     address = Column(String(500), nullable=False)
     city = Column(String(100), nullable=False, index=True)
     neighborhood = Column(String(100), nullable=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
 
-    # Media
-    photos = Column(JSON, default=list)       # ["url1", "url2", ...]
+    photos = Column(JSON, default=list)
     main_photo = Column(String(500), nullable=True)
     virtual_tour_url = Column(String(500), nullable=True)
 
-    # Features
-    features = Column(JSON, default=list)     # ["pool", "gym", "terrace", ...]
+    features = Column(JSON, default=list)
     is_furnished = Column(Boolean, default=False)
     has_balcony = Column(Boolean, default=False)
     has_elevator = Column(Boolean, default=False)
     pet_friendly = Column(Boolean, default=False)
 
-    # Status
     is_active = Column(Boolean, default=True)
     is_featured = Column(Boolean, default=False)
     views_count = Column(Integer, default=0)
 
-    # FK
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # Relationships
     owner = relationship("User", back_populates="properties")
 
 
@@ -110,24 +105,19 @@ class Subscription(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
 
-    # Stripe
     stripe_customer_id = Column(String(255), unique=True, nullable=True)
     stripe_subscription_id = Column(String(255), unique=True, nullable=True)
 
-    # Plan
     plan_type = Column(Enum(PlanType), nullable=False)
     status = Column(Enum(SubscriptionStatus), default=SubscriptionStatus.active)
 
-    # Limits (based on plan)
-    max_properties = Column(Integer, default=5)     # basic=5, pro=25, enterprise=unlimited(-1)
+    max_properties = Column(Integer, default=5)
     max_photos_per_property = Column(Integer, default=5)
 
-    # Dates
     current_period_start = Column(DateTime(timezone=True), nullable=True)
     current_period_end = Column(DateTime(timezone=True), nullable=True)
     canceled_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # Relationships
     user = relationship("User", back_populates="subscription")

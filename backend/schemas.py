@@ -22,6 +22,7 @@ class UserOut(BaseModel):
     phone: Optional[str]
     avatar_url: Optional[str]
     is_active: bool
+    trial_ends_at: Optional[datetime]
     created_at: datetime
     class Config: from_attributes = True
 

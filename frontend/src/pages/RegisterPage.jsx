@@ -70,8 +70,8 @@ export default function RegisterPage() {
   }
 
   const Field = ({ name, label, type = 'text', placeholder, children }) => (
-    <div className="space-y-1">
-      <label className="text-xs font-medium text-stone-700">{label}</label>
+    <div className="flex flex-col gap-2">
+      <label className="text-xs font-medium text-stone-700 block">{label}</label>
       {children ?? (
         <input
           type={type}

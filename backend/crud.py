@@ -1,12 +1,12 @@
 """
-crud.py — Database operations (Create, Read, Update, Delete)
+crud.py — Database operations
 """
 
 from sqlalchemy.orm import Session
 from typing import Optional, Tuple, List
+from datetime import datetime, timedelta, timezone
 import models, schemas
 from models import SubscriptionStatus
-
 
 PLAN_LIMITS = {
     "basic":      {"max_properties": 5,  "max_photos": 5},
@@ -14,25 +14,32 @@ PLAN_LIMITS = {
     "enterprise": {"max_properties": -1, "max_photos": -1},
 }
 
+TRIAL_DAYS = 30
+
 
 # ─── User CRUD ────────────────────────────────────────────────────────────────
 def get_user(db: Session, user_id: int) -> Optional[models.User]:
     return db.query(models.User).filter(models.User.id == user_id).first()
 
+
 def get_user_by_email(db: Session, email: str) -> Optional[models.User]:
     return db.query(models.User).filter(models.User.email == email).first()
 
+
 def create_user(db: Session, user_in: schemas.UserCreate, hashed_password: str) -> models.User:
+    trial_ends = datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS)
     user = models.User(
         email=user_in.email,
         full_name=user_in.full_name,
         phone=user_in.phone,
         hashed_password=hashed_password,
+        trial_ends_at=trial_ends,       # ← trial de 30 días desde el registro
     )
     db.add(user)
     db.commit()
     db.refresh(user)
     return user
+
 
 def update_user(db: Session, user: models.User, data: dict) -> models.User:
     for key, value in data.items():
@@ -42,12 +49,28 @@ def update_user(db: Session, user: models.User, data: dict) -> models.User:
     return user
 
 
+def is_trial_active(user: models.User) -> bool:
+    """Retorna True si el usuario aún está dentro de su período de prueba."""
+    if not user.trial_ends_at:
+        return False
+    return datetime.now(timezone.utc) < user.trial_ends_at
+
+
+def trial_days_remaining(user: models.User) -> int:
+    """Días restantes de trial. 0 si expiró."""
+    if not user.trial_ends_at:
+        return 0
+    delta = user.trial_ends_at - datetime.now(timezone.utc)
+    return max(0, delta.days)
+
+
 # ─── Property CRUD ────────────────────────────────────────────────────────────
 def get_property(db: Session, property_id: int) -> Optional[models.Property]:
     return db.query(models.Property).filter(
         models.Property.id == property_id,
         models.Property.is_active == True
     ).first()
+
 
 def get_properties(db: Session, skip: int, limit: int, filters: schemas.PropertyFilters) -> Tuple[List[models.Property], int]:
     query = db.query(models.Property).filter(models.Property.is_active == True)
@@ -72,10 +95,12 @@ def get_properties(db: Session, skip: int, limit: int, filters: schemas.Property
     ).offset(skip).limit(limit).all()
     return props, total
 
+
 def get_properties_by_owner(db: Session, owner_id: int) -> List[models.Property]:
     return db.query(models.Property).filter(
         models.Property.owner_id == owner_id
     ).order_by(models.Property.created_at.desc()).all()
+
 
 def create_property(db: Session, property_in: schemas.PropertyCreate, owner_id: int) -> models.Property:
     prop = models.Property(**property_in.dict(), owner_id=owner_id)
@@ -83,6 +108,7 @@ def create_property(db: Session, property_in: schemas.PropertyCreate, owner_id: 
     db.commit()
     db.refresh(prop)
     return prop
+
 
 def update_property(db: Session, prop: models.Property, property_in: schemas.PropertyUpdate) -> models.Property:
     update_data = property_in.dict(exclude_unset=True)
@@ -92,9 +118,11 @@ def update_property(db: Session, prop: models.Property, property_in: schemas.Pro
     db.refresh(prop)
     return prop
 
+
 def delete_property(db: Session, prop: models.Property):
     prop.is_active = False
     db.commit()
+
 
 def increment_views(db: Session, property_id: int):
     db.query(models.Property).filter(
@@ -109,6 +137,7 @@ def get_active_subscription(db: Session, user_id: int) -> Optional[models.Subscr
         models.Subscription.user_id == user_id,
         models.Subscription.status == SubscriptionStatus.active
     ).first()
+
 
 def upsert_subscription(db: Session, user_id: int, plan_type: str,
                          stripe_customer_id: str, stripe_subscription_id: str) -> models.Subscription:
@@ -134,6 +163,7 @@ def upsert_subscription(db: Session, user_id: int, plan_type: str,
     db.commit()
     db.refresh(sub)
     return sub
+
 
 def deactivate_subscription(db: Session, stripe_subscription_id: str):
     sub = db.query(models.Subscription).filter(

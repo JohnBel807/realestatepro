@@ -3,6 +3,7 @@ import React from 'react'
 // Dashboard del vendedor: mis propiedades + formulario de creación con React Hook Form
 
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -157,6 +158,7 @@ function PropertyForm({ onSuccess, onCancel }) {
 // ─── Dashboard Page ───────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { user, subscription } = useAuthStore()
+  const navigate = useNavigate()
   const { myProperties, isLoading, fetchMyProperties, deleteProperty } = usePropertiesStore()
   const [showForm, setShowForm] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
@@ -219,7 +221,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Active subscription info */}
+      {/* Subscription / Trial info */}
       {!noSubscription && (
         <div className="flex items-center gap-2 mb-6 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 w-fit">
           <Crown size={13} className="text-emerald-500" />
@@ -230,6 +232,20 @@ export default function DashboardPage() {
           </span>
         </div>
       )}
+      {noSubscription && (() => {
+        const days = user?.trial_ends_at
+          ? Math.max(0, Math.ceil((new Date(user.trial_ends_at) - new Date()) / 86400000))
+          : 0
+        return days > 0 ? (
+          <div className="flex items-center gap-2 mb-6 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 w-fit">
+            <span className="text-xs">⏱</span>
+            <span className="text-xs font-medium">Trial activo — {days} días restantes</span>
+            <button onClick={() => navigate('/pricing')} className="text-xs underline text-amber-600 hover:text-amber-800 ml-1">
+              Elegir plan
+            </button>
+          </div>
+        ) : null
+      })()}
 
       {/* Form modal-like */}
       {showForm && (
