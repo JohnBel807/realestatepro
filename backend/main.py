@@ -39,21 +39,30 @@ _allowed_origins = [
     "https://realestatepro-nine.vercel.app", # Tu URL actual de Vercel
 ]
 # Agregar la URL de producción si está definida
-"""if _frontend_url:
-    _allowed_origins.append(_frontend_url)
-    # Soportar también con/sin www y subdominios de Vercel
-    if "vercel.app" in _frontend_url:
-        # Permite cualquier subdominio de vercel.app para previews de PR
-        _allowed_origins.append(_frontend_url.replace("https://", "https://*."))"""
+# --- App Init ---
+models.Base.metadata.create_all(bind=engine)
+
+app = FastAPI(
+    title="RealEstate Pro API",
+    version="1.0.0",
+    description="Portal inmobiliario — Backend API"
+)
+
+# LISTA FIJA DE ORÍGENES (Sin lógica compleja que pueda fallar)
+_allowed_origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://realestatepro-nine.vercel.app",  # Tu URL de Vercel
+]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins,
-    #allow_origin_regex=r"https://.*\.vercel\.app",  # permite todos los previews de Vercel
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
