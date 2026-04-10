@@ -129,11 +129,17 @@ export default function PropertyDetailPage() {
   if (!property) return null
 
   const {
-    title, description, price, price_currency, area_m2, bedrooms, bathrooms,
+    title, description, price, price_currency, listing_type = 'sale',
+    rental_price, rental_deposit, rental_min_months, rental_includes_admin, admin_fee,
+    area_m2, bedrooms, bathrooms,
     parking_spots, property_type, address, city, neighborhood, latitude, longitude,
     photos, features, is_furnished, has_balcony, has_elevator, pet_friendly,
     views_count, is_featured, created_at, owner,
   } = property
+
+  const isRent = listing_type === 'rent'
+  const isRentSale = listing_type === 'rent_sale'
+  const isSale = listing_type === 'sale' || isRentSale
 
   const locationStr = [neighborhood, city].filter(Boolean).join(', ')
 
@@ -262,13 +268,61 @@ export default function PropertyDetailPage() {
 
           {/* Precio + CTA */}
           <div className="bg-white rounded-2xl border border-stone-200 p-5">
-            <p className="text-xs text-stone-400 uppercase tracking-wider mb-1">Precio</p>
-            <p className="font-serif text-3xl font-semibold text-stone-900 mb-0.5">
-              {formatPrice(price, price_currency)}
-            </p>
-            <p className="text-xs text-stone-400 mb-5">
-              {price_currency} · {(price / area_m2).toLocaleString('es-CO', { maximumFractionDigits: 0 })} por m²
-            </p>
+            {/* Precio según modalidad */}
+            {isRentSale ? (
+              <>
+                <p className="text-xs text-stone-400 uppercase tracking-wider mb-1">Arriendo y Venta</p>
+                <p className="font-serif text-2xl font-semibold text-stone-900">
+                  {formatPrice(rental_price, price_currency)}<span className="text-sm font-normal text-stone-400">/mes</span>
+                </p>
+                <p className="text-xs text-stone-500 mb-1">Precio de venta: <span className="font-medium">{formatPrice(price, price_currency)}</span></p>
+              </>
+            ) : isRent ? (
+              <>
+                <p className="text-xs text-stone-400 uppercase tracking-wider mb-1">Canon mensual</p>
+                <p className="font-serif text-3xl font-semibold text-stone-900 mb-0.5">
+                  {formatPrice(rental_price, price_currency)}
+                  <span className="text-base font-normal text-stone-400">/mes</span>
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-stone-400 uppercase tracking-wider mb-1">Precio de venta</p>
+                <p className="font-serif text-3xl font-semibold text-stone-900 mb-0.5">
+                  {formatPrice(price, price_currency)}
+                </p>
+                <p className="text-xs text-stone-400 mb-1">
+                  {price_currency} · {(price / area_m2).toLocaleString('es-CO', { maximumFractionDigits: 0 })} por m²
+                </p>
+              </>
+            )}
+
+            {/* Condiciones de arriendo */}
+            {(isRent || isRentSale) && (
+              <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 mb-4 space-y-1.5">
+                {rental_deposit && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-stone-500">Depósito</span>
+                    <span className="font-medium text-stone-800">{formatPrice(rental_deposit, price_currency)}</span>
+                  </div>
+                )}
+                {rental_min_months && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-stone-500">Mínimo</span>
+                    <span className="font-medium text-stone-800">{rental_min_months} meses</span>
+                  </div>
+                )}
+                {admin_fee && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-stone-500">Administración</span>
+                    <span className="font-medium text-stone-800">
+                      {rental_includes_admin ? 'Incluida' : formatPrice(admin_fee, price_currency)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="mb-4" />
 
             {contactSent ? (
               <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-sm">
