@@ -19,8 +19,9 @@ import PricingPage from './pages/PricingPage'
 
 // Conecta Axios con el sistema de toasts
 function AxiosToastBridge() {
-  const toast = useToast()
-  useEffect(() => { setToastRef(toast) }, [toast])
+  let toast = null
+  try { toast = useToast() } catch {}
+  useEffect(() => { if (toast) setToastRef(toast) }, [])
   return null
 }
 

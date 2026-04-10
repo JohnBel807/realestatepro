@@ -61,12 +61,13 @@ export const useAuthStore = create(
         window.location.href = '/'
       },
 
-      // Fetch subscription
+      // Fetch subscription — 404 = sin suscripción (normal para usuarios en trial)
       fetchSubscription: async () => {
         try {
           const { data } = await subscriptionAPI.getMySubscription()
           set({ subscription: data })
-        } catch {
+        } catch (err) {
+          // 404 es esperado si el usuario no tiene suscripción activa
           set({ subscription: null })
         }
       },
