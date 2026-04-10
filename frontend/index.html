@@ -13,7 +13,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
 
     <title>RealEstate Pro — Encuentra tu hogar en Colombia</title>
-  </head>
+    <script>
+    // SPA redirect: restaura la ruta guardada por 404.html
+    (function() {
+      var redirect = sessionStorage.getItem('spa_redirect');
+      if (redirect && redirect !== '/') {
+        sessionStorage.removeItem('spa_redirect');
+        window.history.replaceState(null, null, redirect);
+      }
+    })();
+  </script>
+</head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
