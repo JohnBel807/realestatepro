@@ -140,11 +140,25 @@ export const usePropertiesStore = create((set, get) => ({
       await propertiesAPI.delete(id)
       set((state) => ({
         myProperties: state.myProperties.filter((p) => p.id !== id),
-        properties: state.properties.filter((p) => p.id !== id),
+        properties:   state.properties.filter((p) => p.id !== id),
       }))
       return { success: true }
     } catch {
       return { success: false }
+    }
+  },
+
+  updateProperty: async (id, propertyData) => {
+    try {
+      const { data } = await propertiesAPI.update(id, propertyData)
+      set((state) => ({
+        myProperties: state.myProperties.map((p) => p.id === id ? data : p),
+        properties:   state.properties.map((p)   => p.id === id ? data : p),
+      }))
+      return { success: true, property: data }
+    } catch (err) {
+      const msg = err.response?.data?.detail || 'Error al actualizar la propiedad'
+      return { success: false, error: msg }
     }
   },
 

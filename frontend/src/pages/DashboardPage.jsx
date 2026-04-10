@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useForm, Controller, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Pencil, Trash2, Eye, Crown, AlertCircle, Clock, Home, Key } from 'lucide-react'
+import { Plus, Pencil, Trash2, Eye, Crown, AlertCircle, Clock, Home, Key, X } from 'lucide-react'
 import { useAuthStore, usePropertiesStore } from '../store/useStore'
 import { subscriptionAPI } from '../lib/api'
 import { formatPrice } from '../lib/formatters'
@@ -302,6 +302,215 @@ function PropertyForm({ onSuccess, onCancel }) {
   )
 }
 
+// ─── Edit Property Modal ─────────────────────────────────────────────────────
+function EditPropertyModal({ property, onClose, onSaved }) {
+  const { updateProperty } = usePropertiesStore()
+  const [serverError, setServerError] = useState(null)
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(propertySchema),
+    defaultValues: {
+      listing_type:           property.listing_type || 'sale',
+      title:                  property.title || '',
+      description:            property.description || '',
+      price:                  property.price || 0,
+      rental_price:           property.rental_price || '',
+      rental_deposit:         property.rental_deposit || '',
+      rental_min_months:      property.rental_min_months || '',
+      rental_includes_admin:  property.rental_includes_admin || false,
+      admin_fee:              property.admin_fee || '',
+      area_m2:                property.area_m2 || '',
+      bedrooms:               property.bedrooms || 0,
+      bathrooms:              property.bathrooms || 0,
+      parking_spots:          property.parking_spots || 0,
+      property_type:          property.property_type || 'apartment',
+      address:                property.address || '',
+      city:                   property.city || '',
+      neighborhood:           property.neighborhood || '',
+      photos: (property.photos || []).map(url => ({ url, public_id: '' })),
+    },
+  })
+
+  const listingType = watch('listing_type')
+  const isSale = listingType === 'sale' || listingType === 'rent_sale'
+  const isRent = listingType === 'rent'  || listingType === 'rent_sale'
+
+  const onSubmit = async (data) => {
+    setServerError(null)
+    const photoUrls = (data.photos || []).map(p => p.url)
+    const payload = {
+      ...data,
+      photos:     photoUrls,
+      main_photo: photoUrls[0] || property.main_photo || null,
+      price:      isSale ? (Number(data.price) || 0) : 0,
+    }
+    const result = await updateProperty(property.id, payload)
+    if (result.success) {
+      onSaved()
+    } else {
+      setServerError(result.error)
+    }
+  }
+
+  // Prevent body scroll while modal is open
+  React.useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 overflow-y-auto py-8 px-4"
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="bg-white rounded-2xl border border-stone-200 w-full max-w-2xl shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
+          <h2 className="font-serif text-lg font-medium text-stone-900">Editar propiedad</h2>
+          <button onClick={onClose}
+            className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Form */}
+        <div className="p-6 overflow-y-auto max-h-[75vh]">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            {serverError && (
+              <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-3 rounded-lg">
+                <AlertCircle size={15} className="shrink-0" /> {serverError}
+              </div>
+            )}
+
+            {/* Tipo de operación */}
+            <section className="bg-stone-50 rounded-xl p-4 border border-stone-200">
+              <h3 className="text-[10px] font-medium uppercase tracking-wider text-stone-500 mb-3">Tipo de operación</h3>
+              <Controller name="listing_type" control={control}
+                render={({ field }) => (
+                  <ListingTypeSelector value={field.value} onChange={field.onChange} />
+                )} />
+            </section>
+
+            {/* Info general */}
+            <section className="bg-stone-50 rounded-xl p-4 border border-stone-200">
+              <h3 className="text-[10px] font-medium uppercase tracking-wider text-stone-500 mb-3">Información general</h3>
+              <div className="space-y-3">
+                <Field register={register} errors={errors} name="title" label="Título *"
+                  placeholder="Ej. Finca en Barbosa con piscina" />
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-stone-700">Descripción</label>
+                  <textarea {...register('description')} rows={3}
+                    className="text-sm px-3 py-2 border border-stone-200 rounded-lg outline-none focus:border-amber-400 resize-none bg-white" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium text-stone-700">Tipo de propiedad *</label>
+                  <select {...register('property_type')}
+                    className="text-sm px-3 py-2 border border-stone-200 rounded-lg outline-none focus:border-amber-400 bg-white">
+                    <option value="apartment">Apartamento</option>
+                    <option value="house">Casa / Finca</option>
+                    <option value="office">Oficina</option>
+                    <option value="land">Terreno / Lote</option>
+                    <option value="commercial">Local comercial</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+
+            {/* Precio venta */}
+            {isSale && (
+              <section className="bg-stone-50 rounded-xl p-4 border border-stone-200">
+                <h3 className="text-[10px] font-medium uppercase tracking-wider text-stone-500 mb-3">Precio de venta</h3>
+                <Field register={register} errors={errors} name="price"
+                  label="Precio (COP) *" type="number" prefix="$" placeholder="250000000" />
+              </section>
+            )}
+
+            {/* Arriendo */}
+            {isRent && (
+              <section className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <Key size={13} className="text-amber-600" />
+                  <h3 className="text-[10px] font-medium uppercase tracking-wider text-amber-700">Condiciones de arriendo</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field register={register} errors={errors} name="rental_price"
+                    label="Canon mensual (COP) *" type="number" prefix="$" placeholder="1500000" />
+                  <Field register={register} errors={errors} name="rental_deposit"
+                    label="Depósito" type="number" optional prefix="$" placeholder="3000000" />
+                  <Field register={register} errors={errors} name="rental_min_months"
+                    label="Meses mínimos" type="number" optional placeholder="12" />
+                  <Field register={register} errors={errors} name="admin_fee"
+                    label="Administración (COP)" type="number" optional prefix="$" placeholder="180000" />
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <input type="checkbox" id="edit_rental_includes_admin"
+                    {...register('rental_includes_admin')}
+                    className="w-4 h-4 rounded border-stone-300 accent-amber-500" />
+                  <label htmlFor="edit_rental_includes_admin" className="text-xs text-stone-700 cursor-pointer">
+                    Administración incluida en el canon
+                  </label>
+                </div>
+              </section>
+            )}
+
+            {/* Métricas */}
+            <section className="bg-stone-50 rounded-xl p-4 border border-stone-200">
+              <h3 className="text-[10px] font-medium uppercase tracking-wider text-stone-500 mb-3">Métricas</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <Field register={register} errors={errors} name="area_m2" label="Área m² *" type="number" placeholder="85" />
+                <Field register={register} errors={errors} name="bedrooms" label="Habitaciones" type="number" />
+                <Field register={register} errors={errors} name="bathrooms" label="Baños" type="number" />
+                <Field register={register} errors={errors} name="parking_spots" label="Parqueaderos" type="number" />
+              </div>
+            </section>
+
+            {/* Fotos */}
+            <section className="bg-stone-50 rounded-xl p-4 border border-stone-200">
+              <h3 className="text-[10px] font-medium uppercase tracking-wider text-stone-500 mb-3">Fotos</h3>
+              <Controller name="photos" control={control}
+                render={({ field }) => (
+                  <ImageUploader value={field.value} onChange={field.onChange} maxImages={10} />
+                )} />
+            </section>
+
+            {/* Ubicación */}
+            <section className="bg-stone-50 rounded-xl p-4 border border-stone-200">
+              <h3 className="text-[10px] font-medium uppercase tracking-wider text-stone-500 mb-3">Ubicación</h3>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <Field register={register} errors={errors} name="city" label="Municipio *" placeholder="Barbosa" />
+                  <Field register={register} errors={errors} name="neighborhood" label="Barrio / Vereda" optional placeholder="Centro" />
+                </div>
+                <Field register={register} errors={errors} name="address" label="Dirección *" placeholder="Cra. 7 # 45-23" />
+              </div>
+            </section>
+
+            {/* Acciones */}
+            <div className="flex gap-3 justify-end pt-2">
+              <button type="button" onClick={onClose}
+                className="px-4 py-2 text-sm border border-stone-200 rounded-lg hover:bg-stone-100 transition-colors">
+                Cancelar
+              </button>
+              <button type="submit" disabled={isSubmitting}
+                className="px-5 py-2 text-sm bg-stone-900 text-white rounded-lg hover:bg-stone-800 disabled:opacity-50 transition-colors flex items-center gap-2">
+                {isSubmitting
+                  ? <><span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />Guardando…</>
+                  : '✓ Guardar cambios'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function getTrialDaysRemaining(user) {
   if (!user?.trial_ends_at) return 0
@@ -320,9 +529,10 @@ const LISTING_COLORS = {
 export default function DashboardPage() {
   const { user, subscription } = useAuthStore()
   const navigate = useNavigate()
-  const { myProperties, isLoading, fetchMyProperties, deleteProperty } = usePropertiesStore()
+  const { myProperties, isLoading, fetchMyProperties, deleteProperty, updateProperty } = usePropertiesStore()
   const [showForm, setShowForm] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
+  const [editingProperty, setEditingProperty] = useState(null) // propiedad que se está editando
 
   useEffect(() => { fetchMyProperties() }, [])
 
@@ -494,7 +704,10 @@ export default function DashboardPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
-                      <button className="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 hover:text-stone-700 transition-colors">
+                      <button
+                        onClick={() => setEditingProperty(prop)}
+                        className="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 hover:text-stone-700 transition-colors"
+                        title="Editar propiedad">
                         <Pencil size={13} />
                       </button>
                       <button onClick={() => deleteProperty(prop.id)}
@@ -509,6 +722,15 @@ export default function DashboardPage() {
           </table>
         )}
       </div>
+
+      {/* ── Modal de edición ── */}
+      {editingProperty && (
+        <EditPropertyModal
+          property={editingProperty}
+          onClose={() => setEditingProperty(null)}
+          onSaved={() => { setEditingProperty(null); fetchMyProperties() }}
+        />
+      )}
     </main>
   )
 }
