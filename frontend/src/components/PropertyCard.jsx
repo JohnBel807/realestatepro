@@ -4,7 +4,7 @@ import React from 'react'
 
 import { useState } from 'react'
 import { Heart, MapPin, BedDouble, Bath, Maximize, Eye } from 'lucide-react'
-import { formatPrice } from '../lib/formatters'
+import { formatPrice, cloudinaryThumb } from '../lib/formatters'
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 export function PropertyCardSkeleton() {
@@ -78,7 +78,7 @@ export default function PropertyCard({ property, onNavigate }) {
       <div className="relative h-48 bg-stone-100 overflow-hidden">
         {main_photo ? (
           <img
-            src={main_photo}
+            src={cloudinaryThumb(main_photo)}
             alt={title}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />

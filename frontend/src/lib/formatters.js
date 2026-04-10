@@ -32,3 +32,29 @@ export function formatRelativeDate(dateString) {
   if (diffDays < 30) return `Hace ${Math.floor(diffDays / 7)} semanas`
   return date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
 }
+
+
+// ─── Cloudinary URL optimizer ─────────────────────────────────────────────────
+/**
+ * Aplica transformaciones a una URL de Cloudinary al vuelo.
+ * Cloudinary permite modificar la URL directamente sin re-firmar.
+ *
+ * Uso:
+ *   cloudinaryUrl(url, 'w_800,h_600,c_fill,q_auto,f_auto')
+ *   cloudinaryUrl(url, 'w_400,h_300,c_fill,q_auto:eco,f_auto')
+ */
+export function cloudinaryUrl(url, transforms = 'w_1200,h_800,c_limit,q_auto,f_auto') {
+  if (!url || !url.includes('cloudinary.com')) return url
+  // Inserta las transformaciones después de /upload/
+  return url.replace('/upload/', `/upload/${transforms}/`)
+}
+
+/** Thumbnail optimizado (tarjetas de listado) */
+export function cloudinaryThumb(url) {
+  return cloudinaryUrl(url, 'w_600,h_400,c_fill,q_auto:good,f_auto')
+}
+
+/** Imagen de detalle (página de propiedad) */
+export function cloudinaryDetail(url) {
+  return cloudinaryUrl(url, 'w_1200,h_800,c_limit,q_auto:good,f_auto')
+}

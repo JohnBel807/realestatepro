@@ -1,13 +1,15 @@
 """
-upload.py — Subida de imágenes via Cloudinary
-Fix: las transformaciones en uploads firmados causan Invalid Signature.
-Solución: subir sin transformation, aplicar eager para procesamiento
-posterior, y usar URL transformations en el frontend.
+upload.py — Cloudinary upload SIMPLIFICADO
+Raíz del problema: cualquier parámetro extra (transformation, eager, overwrite,
+unique_filename) modifica el string-to-sign y rompe la firma cuando el SDK
+los serializa diferente a lo esperado por la API.
+
+Solución: upload mínimo — solo folder + resource_type.
+Las optimizaciones se aplican en la URL del frontend via Cloudinary URL API.
 """
 
 import cloudinary
 import cloudinary.uploader
-import cloudinary.api
 import os
 from fastapi import HTTPException, UploadFile
 
@@ -18,18 +20,17 @@ cloudinary.config(
     secure=True,
 )
 
-ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/jpg"}
-MAX_SIZE_MB    = 5
-MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024
+ALLOWED_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
+MAX_SIZE_BYTES = 5 * 1024 * 1024  # 5MB
 
 
 async def upload_image(file: UploadFile, folder: str = "realestate-pro") -> dict:
-    # Validar tipo
-    content_type = file.content_type or ""
-    if not any(content_type.startswith(t) for t in ["image/jpeg", "image/png", "image/webp"]):
+    # Validar tipo MIME
+    ct = (file.content_type or "").lower()
+    if not any(ct.startswith(t) for t in ALLOWED_TYPES):
         raise HTTPException(
             status_code=400,
-            detail=f"Tipo no permitido: {content_type}. Usa JPG, PNG o WebP."
+            detail=f"Tipo no permitido: '{ct}'. Usa JPG, PNG o WebP."
         )
 
     contents = await file.read()
@@ -37,35 +38,27 @@ async def upload_image(file: UploadFile, folder: str = "realestate-pro") -> dict
     if len(contents) > MAX_SIZE_BYTES:
         raise HTTPException(
             status_code=400,
-            detail=f"La imagen supera {MAX_SIZE_MB}MB."
+            detail="La imagen supera el límite de 5MB."
         )
 
     try:
+        # Upload MÍNIMO — solo los 2 parámetros que no rompen la firma
         result = cloudinary.uploader.upload(
             contents,
             folder=folder,
             resource_type="image",
-            # eager: Cloudinary procesa estas versiones en background sin afectar la firma
-            eager=[
-                {"width": 1200, "height": 800, "crop": "limit", "quality": "auto:good", "fetch_format": "auto"},
-                {"width": 400,  "height": 300, "crop": "fill",  "quality": "auto:eco",  "fetch_format": "auto"},
-            ],
-            eager_async=True,   # no bloquea el upload esperando que termine
-            # Overwrite si se vuelve a subir el mismo archivo
-            unique_filename=True,
-            overwrite=False,
         )
         return {
-            "url":        result["secure_url"],
-            "public_id":  result["public_id"],
-            "width":      result.get("width"),
-            "height":     result.get("height"),
-            "format":     result.get("format"),
+            "url":       result["secure_url"],
+            "public_id": result["public_id"],
+            "width":     result.get("width"),
+            "height":    result.get("height"),
         }
-    except cloudinary.exceptions.Error as e:
-        raise HTTPException(status_code=500, detail=f"Cloudinary error: {str(e)}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al subir imagen: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al subir imagen: {str(e)}"
+        )
 
 
 async def delete_image(public_id: str) -> bool:

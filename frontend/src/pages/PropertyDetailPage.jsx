@@ -9,7 +9,7 @@ import {
   CheckCircle2, Phone, MessageCircle, AlertCircle,
 } from 'lucide-react'
 import { propertiesAPI } from '../lib/api'
-import { formatPrice, formatRelativeDate } from '../lib/formatters'
+import { formatPrice, formatRelativeDate, cloudinaryDetail } from '../lib/formatters'
 
 // Skeleton para la página de detalle
 function DetailSkeleton() {
