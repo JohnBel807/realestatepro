@@ -268,6 +268,32 @@ async def wompi_webhook(request, db: Session = Depends(get_db)):
     return {"received": True}
 
 
+# ─── Wompi redirect handler ──────────────────────────────────────────────────
+@app.get("/dashboard/activate-subscription", tags=["Subscriptions"])
+async def activate_subscription_on_redirect(
+    plan: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    El frontend llama este endpoint cuando el usuario vuelve de Wompi
+    con ?subscription=success&plan=pro en la URL.
+    Activa la suscripción sin esperar el webhook.
+    """
+    if plan not in ("basic", "pro", "enterprise"):
+        raise HTTPException(400, "Plan inválido")
+
+    sub = crud.upsert_subscription(
+        db,
+        user_id=current_user.id,
+        plan_type=plan,
+        stripe_customer_id=f"wompi_redirect_{current_user.id}",
+        stripe_subscription_id=f"wompi_redirect_{current_user.id}_{plan}",
+    )
+    logger.info(f"Suscripción activada por redirect: user={current_user.id} plan={plan}")
+    return {"activated": True, "plan": plan, "status": sub.status}
+
+
 # ─── Dashboard ────────────────────────────────────────────────────────────────
 @app.get("/dashboard/my-properties", response_model=List[schemas.PropertyOut], tags=["Dashboard"])
 def my_properties(

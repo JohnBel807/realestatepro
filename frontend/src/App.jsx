@@ -33,6 +33,21 @@ function AppInner() {
       refreshUser()
       fetchSubscription()
     }
+
+    // Wompi redirect: ?subscription=success&plan=pro
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('subscription') === 'success' && params.get('plan') && token) {
+      const plan = params.get('plan')
+      import('./lib/api').then(({ default: api }) => {
+        api.get(`/dashboard/activate-subscription?plan=${plan}`)
+          .then(() => {
+            fetchSubscription()
+            // Limpiar URL sin recargar
+            window.history.replaceState({}, '', '/dashboard')
+          })
+          .catch(() => {})
+      })
+    }
   }, [])
 
   return (
