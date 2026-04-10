@@ -189,5 +189,11 @@
   "seo": {
     "home_title": "VelezyRicaurte Inmobiliaria | Fincas, Lotes y Casas en Vélez y Ricaurte",
     "home_desc": "Encuentra fincas, lotes, casas y apartamentos en Barbosa, Vélez, Moniquirá, Puente Nacional y toda la región de Vélez y Ricaurte. Propiedades verificadas."
+  },
+  "contact": {
+    "email": "johnroa@velezyricaurte.com",
+    "send_email": "Enviar correo",
+    "or_email": "O escríbenos a",
+    "contact_us": "Contáctanos"
   }
 }

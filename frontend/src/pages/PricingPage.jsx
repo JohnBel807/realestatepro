@@ -257,8 +257,8 @@ export default function PricingPage() {
         <p className="text-xs text-stone-400 mb-1">🔒 Pagos seguros procesados por Stripe</p>
         <p className="text-xs text-stone-400">
           Todos los planes incluyen 7 días de garantía de devolución.{' '}
-          <a href="mailto:soporte@realestatepro.co" className="text-amber-600 hover:underline">
-            ¿Preguntas?
+          <a href="mailto:johnroa@velezyricaurte.com" className="text-amber-600 hover:underline font-medium">
+            johnroa@velezyricaurte.com
           </a>
         </p>
       </div>

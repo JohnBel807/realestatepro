@@ -261,13 +261,20 @@ export default function HomePage() {
         <p className="text-xs text-stone-400">
           Provincias de Vélez (Santander) y Ricaurte (Boyacá), Colombia
         </p>
-        <div className="flex justify-center gap-4 mt-3 text-xs text-stone-400">
+        <div className="flex justify-center gap-4 mt-3 text-xs text-stone-400 flex-wrap">
           {['Barbosa', 'Vélez', 'Moniquirá', 'Puente Nacional', 'Landázuri'].map(city => (
             <button key={city} onClick={() => { setFilters({ city: city.toLowerCase() }); window.scrollTo(0, 0) }}
               className="hover:text-stone-700 transition-colors">
               {city}
             </button>
           ))}
+        </div>
+        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-stone-400">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          <a href="mailto:johnroa@velezyricaurte.com"
+            className="hover:text-stone-700 transition-colors">
+            johnroa@velezyricaurte.com
+          </a>
         </div>
       </footer>
     </main>

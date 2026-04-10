@@ -356,6 +356,14 @@ export default function PropertyDetailPage() {
                     <Phone size={15} /> Llamar
                   </a>
                 )}
+                {/* Correo directo al portal */}
+                <a
+                  href={`mailto:johnroa@velezyricaurte.com?subject=Consulta sobre: ${encodeURIComponent(title)}&body=Hola, estoy interesado en la propiedad "${title}" publicada en VelezyRicaurte Inmobiliaria. Por favor contáctenme.`}
+                  className="w-full flex items-center justify-center gap-2 border border-stone-200 hover:bg-stone-50 text-stone-600 text-sm py-2.5 px-4 rounded-xl transition-colors"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                  Enviar correo
+                </a>
               </div>
             )}
           </div>

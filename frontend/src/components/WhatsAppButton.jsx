@@ -3,7 +3,7 @@ import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 const WA_PHONE = import.meta.env.VITE_WHATSAPP_NUMBER || '573116861370'
-const WA_MSG   = encodeURIComponent('Hola, me gustaría obtener más información sobre sus propiedades.')
+const WA_MSG   = encodeURIComponent('Hola, me gustaría obtener información sobre propiedades en VelezyRicaurte Inmobiliaria.')
 
 export default function WhatsAppButton() {
   const { t } = useTranslation()

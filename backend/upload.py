@@ -1,5 +1,8 @@
 """
-upload.py — Manejo de subida de imágenes vía Cloudinary
+upload.py — Subida de imágenes via Cloudinary
+Fix: las transformaciones en uploads firmados causan Invalid Signature.
+Solución: subir sin transformation, aplicar eager para procesamiento
+posterior, y usar URL transformations en el frontend.
 """
 
 import cloudinary
@@ -8,7 +11,6 @@ import cloudinary.api
 import os
 from fastapi import HTTPException, UploadFile
 
-# Configurar Cloudinary con variables de entorno
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
@@ -16,56 +18,57 @@ cloudinary.config(
     secure=True,
 )
 
-ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
-MAX_SIZE_MB = 5
+ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/jpg"}
+MAX_SIZE_MB    = 5
 MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024
 
 
 async def upload_image(file: UploadFile, folder: str = "realestate-pro") -> dict:
-    """
-    Sube una imagen a Cloudinary y retorna la URL y public_id.
-    """
     # Validar tipo
-    if file.content_type not in ALLOWED_TYPES:
+    content_type = file.content_type or ""
+    if not any(content_type.startswith(t) for t in ["image/jpeg", "image/png", "image/webp"]):
         raise HTTPException(
             status_code=400,
-            detail=f"Tipo de archivo no permitido: {file.content_type}. Usa JPG, PNG o WebP."
+            detail=f"Tipo no permitido: {content_type}. Usa JPG, PNG o WebP."
         )
 
-    # Leer contenido
     contents = await file.read()
 
-    # Validar tamaño
     if len(contents) > MAX_SIZE_BYTES:
         raise HTTPException(
             status_code=400,
-            detail=f"El archivo supera el límite de {MAX_SIZE_MB}MB."
+            detail=f"La imagen supera {MAX_SIZE_MB}MB."
         )
 
-    # Subir a Cloudinary
     try:
         result = cloudinary.uploader.upload(
             contents,
             folder=folder,
-            transformation=[
-                {"width": 1200, "height": 800, "crop": "limit"},  # máximo 1200x800
-                {"quality": "auto:good"},                           # compresión automática
-                {"fetch_format": "auto"},                           # WebP si el browser lo soporta
-            ],
             resource_type="image",
+            # eager: Cloudinary procesa estas versiones en background sin afectar la firma
+            eager=[
+                {"width": 1200, "height": 800, "crop": "limit", "quality": "auto:good", "fetch_format": "auto"},
+                {"width": 400,  "height": 300, "crop": "fill",  "quality": "auto:eco",  "fetch_format": "auto"},
+            ],
+            eager_async=True,   # no bloquea el upload esperando que termine
+            # Overwrite si se vuelve a subir el mismo archivo
+            unique_filename=True,
+            overwrite=False,
         )
         return {
-            "url": result["secure_url"],
-            "public_id": result["public_id"],
-            "width": result.get("width"),
-            "height": result.get("height"),
+            "url":        result["secure_url"],
+            "public_id":  result["public_id"],
+            "width":      result.get("width"),
+            "height":     result.get("height"),
+            "format":     result.get("format"),
         }
+    except cloudinary.exceptions.Error as e:
+        raise HTTPException(status_code=500, detail=f"Cloudinary error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al subir imagen: {str(e)}")
 
 
 async def delete_image(public_id: str) -> bool:
-    """Elimina una imagen de Cloudinary por su public_id."""
     try:
         cloudinary.uploader.destroy(public_id)
         return True

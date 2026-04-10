@@ -189,5 +189,11 @@
   "seo": {
     "home_title": "VelezyRicaurte Real Estate | Farms, Lots & Houses in Vélez and Ricaurte",
     "home_desc": "Find farms, lots, houses and apartments in Barbosa, Vélez, Moniquirá, Puente Nacional and the entire Vélez and Ricaurte region. Verified properties."
+  },
+  "contact": {
+    "email": "johnroa@velezyricaurte.com",
+    "send_email": "Send email",
+    "or_email": "Or email us at",
+    "contact_us": "Contact us"
   }
 }
