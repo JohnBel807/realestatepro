@@ -7,6 +7,9 @@ import SEOHead from '../components/SEOHead'
 import { usePropertiesStore } from '../store/useStore'
 import { useNavigate } from 'react-router-dom'
 
+// ─── Constantes ──────────────────────────────────────────────────────────────
+const EMPRESA = "VelezyRicaurte Inmobiliaria"
+
 // ─── Paleta regional ──────────────────────────────────────────────────────────
 const COLORS = {
   tierra:    '#6B4E2A',   // Marrón tierra Santander
