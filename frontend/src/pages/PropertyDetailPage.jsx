@@ -16,7 +16,7 @@ function DetailSkeleton() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 animate-pulse">
       <div className="h-5 bg-stone-100 rounded w-40 mb-6" />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-2 space-y-4">
           <div className="h-80 bg-stone-100 rounded-2xl" />
           <div className="h-6 bg-stone-100 rounded w-3/4" />
@@ -170,10 +170,10 @@ export default function PropertyDetailPage() {
         <span className="text-stone-600 truncate max-w-xs">{title}</span>
       </nav>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
         {/* ── Columna principal ── */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 flex flex-col gap-5">
 
           {/* Galería */}
           <PhotoGallery photos={photos} title={title} />
@@ -216,7 +216,7 @@ export default function PropertyDetailPage() {
           {/* Specs grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {specs.filter((s) => s.show).map(({ icon: Icon, label, value }) => (
-              <div key={label} className="card p-4 text-center">
+              <div key={label} className="bg-white rounded-xl border border-stone-200 p-4 text-center">
                 <Icon size={18} className="mx-auto mb-1.5 text-amber-500" />
                 <p className="font-serif text-xl font-semibold">{value}</p>
                 <p className="text-[11px] text-stone-400 mt-0.5">{label}</p>
@@ -226,7 +226,7 @@ export default function PropertyDetailPage() {
 
           {/* Descripción */}
           {description && (
-            <div className="card p-5">
+            <div className="bg-white rounded-xl border border-stone-200 p-5">
               <h2 className="font-serif text-lg font-medium mb-3">Descripción</h2>
               <p className="text-sm text-stone-600 leading-relaxed whitespace-pre-line">{description}</p>
             </div>
@@ -234,7 +234,7 @@ export default function PropertyDetailPage() {
 
           {/* Características y extras */}
           {(features?.length > 0 || extras.length > 0) && (
-            <div className="card p-5">
+            <div className="bg-white rounded-xl border border-stone-200 p-5">
               <h2 className="font-serif text-lg font-medium mb-4">Características</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {extras.map(({ label }) => (
@@ -258,28 +258,28 @@ export default function PropertyDetailPage() {
         </div>
 
         {/* ── Sidebar ── */}
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
 
           {/* Precio + CTA */}
-          <div className="card p-5 sticky top-20">
+          <div className="bg-white rounded-2xl border border-stone-200 p-5">
             <p className="text-xs text-stone-400 uppercase tracking-wider mb-1">Precio</p>
-            <p className="font-serif text-3xl font-semibold mb-0.5">
+            <p className="font-serif text-3xl font-semibold text-stone-900 mb-0.5">
               {formatPrice(price, price_currency)}
             </p>
             <p className="text-xs text-stone-400 mb-5">
               {price_currency} · {(price / area_m2).toLocaleString('es-CO', { maximumFractionDigits: 0 })} por m²
             </p>
 
-            {/* Botones de contacto */}
             {contactSent ? (
-              <div className="flex items-center gap-2 text-emerald-700 bg-emerald-50 border border-emerald-200 px-4 py-3 rounded-xl text-sm">
-                <CheckCircle2 size={16} /> ¡Solicitud enviada! El vendedor te contactará pronto.
+              <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-sm">
+                <CheckCircle2 size={16} className="shrink-0" />
+                ¡Solicitud enviada! El vendedor te contactará pronto.
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 <button
                   onClick={() => setContactSent(true)}
-                  className="btn-primary w-full justify-center"
+                  className="w-full flex items-center justify-center gap-2 bg-stone-900 hover:bg-stone-800 text-white text-sm font-medium py-2.5 px-4 rounded-xl transition-colors"
                 >
                   Contactar al vendedor
                 </button>
@@ -288,7 +288,7 @@ export default function PropertyDetailPage() {
                     href={`https://wa.me/${owner.phone.replace(/\D/g, '')}?text=Hola, estoy interesado en la propiedad: ${title}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="btn-secondary w-full justify-center flex items-center gap-2"
+                    className="w-full flex items-center justify-center gap-2 border border-stone-200 hover:bg-stone-50 text-stone-700 text-sm font-medium py-2.5 px-4 rounded-xl transition-colors"
                   >
                     <MessageCircle size={15} className="text-emerald-500" />
                     WhatsApp
@@ -297,7 +297,7 @@ export default function PropertyDetailPage() {
                 {owner?.phone && (
                   <a
                     href={`tel:${owner.phone}`}
-                    className="btn-secondary w-full justify-center flex items-center gap-2"
+                    className="w-full flex items-center justify-center gap-2 border border-stone-200 hover:bg-stone-50 text-stone-700 text-sm font-medium py-2.5 px-4 rounded-xl transition-colors"
                   >
                     <Phone size={15} /> Llamar
                   </a>
@@ -308,14 +308,14 @@ export default function PropertyDetailPage() {
 
           {/* Info del agente */}
           {owner && (
-            <div className="card p-5">
+            <div className="bg-white rounded-2xl border border-stone-200 p-5">
               <p className="text-xs text-stone-400 uppercase tracking-wider mb-3">Publicado por</p>
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-full bg-amber-100 flex items-center justify-center text-amber-800 font-semibold text-sm shrink-0">
                   {owner.full_name.split(' ').slice(0, 2).map((n) => n[0]).join('')}
                 </div>
-                <div>
-                  <p className="font-medium text-sm text-stone-900">{owner.full_name}</p>
+                <div className="min-w-0">
+                  <p className="font-medium text-sm text-stone-900 truncate">{owner.full_name}</p>
                   {owner.phone && (
                     <p className="text-xs text-stone-400 mt-0.5">{owner.phone}</p>
                   )}
@@ -327,10 +327,10 @@ export default function PropertyDetailPage() {
           {/* Aviso legal */}
           <div className="flex gap-2 text-[11px] text-stone-400 leading-relaxed">
             <AlertCircle size={14} className="shrink-0 mt-0.5 text-stone-300" />
-            Verifica siempre la identidad del vendedor y la documentación legal antes de realizar cualquier pago.
+            <span>Verifica siempre la identidad del vendedor y la documentación legal antes de realizar cualquier pago.</span>
           </div>
         </div>
       </div>
     </div>
   )
-}
+} 
