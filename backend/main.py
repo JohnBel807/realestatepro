@@ -153,6 +153,7 @@ def list_properties(
     bedrooms: Optional[int] = None,
     city: Optional[str] = None,
     property_type: Optional[str] = None,
+    listing_type: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Listado público con filtros avanzados. No requiere autenticación."""
@@ -160,7 +161,8 @@ def list_properties(
         min_price=min_price, max_price=max_price,
         min_m2=min_m2, max_m2=max_m2,
         bedrooms=bedrooms, city=city,
-        property_type=property_type
+        property_type=property_type,
+        listing_type=listing_type,
     )
     properties, total = crud.get_properties(db, skip=skip, limit=limit, filters=filters)
     return {"items": properties, "total": total, "skip": skip, "limit": limit}
@@ -338,4 +340,4 @@ async def delete_single_image(
     if f"user-{current_user.id}" not in public_id:
         raise HTTPException(status_code=403, detail="No puedes eliminar imágenes de otros usuarios.")
     success = await delete_image(public_id)
-    return {"deleted": success}
+    return {"deleted": success} 

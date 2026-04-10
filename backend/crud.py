@@ -88,6 +88,8 @@ def get_properties(db: Session, skip: int, limit: int, filters: schemas.Property
         query = query.filter(models.Property.city.ilike(f"%{filters.city}%"))
     if filters.property_type:
         query = query.filter(models.Property.property_type == filters.property_type)
+    if filters.listing_type:
+        query = query.filter(models.Property.listing_type == filters.listing_type)
     total = query.count()
     props = query.order_by(
         models.Property.is_featured.desc(),

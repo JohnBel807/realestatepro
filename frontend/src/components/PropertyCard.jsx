@@ -34,6 +34,10 @@ export default function PropertyCard({ property, onNavigate }) {
     title,
     price,
     price_currency = 'COP',
+    listing_type = 'sale',
+    rental_price,
+    rental_includes_admin,
+    admin_fee,
     area_m2,
     bedrooms,
     bathrooms,
@@ -45,6 +49,11 @@ export default function PropertyCard({ property, onNavigate }) {
     views_count,
     owner,
   } = property
+
+  const isRent = listing_type === 'rent'
+  const isRentSale = listing_type === 'rent_sale'
+  const displayPrice = isRent ? rental_price : price
+  const displayCurrency = price_currency
 
   const locationStr = [neighborhood, city].filter(Boolean).join(' · ')
   const ownerInitials = owner?.full_name
@@ -80,14 +89,15 @@ export default function PropertyCard({ property, onNavigate }) {
         )}
 
         {/* Badges */}
-        <div className="absolute top-3 left-3 flex gap-1.5">
+        <div className="absolute top-3 left-3 flex gap-1.5 flex-wrap">
           {is_featured && (
             <span className="bg-amber-500 text-white text-[10px] font-medium px-2 py-0.5 rounded-sm tracking-wide">
               Destacado
             </span>
           )}
-          <span className="bg-stone-800/70 text-white text-[10px] px-2 py-0.5 rounded-sm capitalize">
-            {property_type}
+          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-sm
+            ${isRent ? 'bg-amber-600 text-white' : isRentSale ? 'bg-purple-600 text-white' : 'bg-stone-800/70 text-white'}`}>
+            {isRent ? 'Arriendo' : isRentSale ? 'Arr. y Venta' : 'Venta'}
           </span>
         </div>
 
@@ -106,9 +116,23 @@ export default function PropertyCard({ property, onNavigate }) {
 
       {/* ── Body ── */}
       <div className="p-4">
-        <p className="font-serif text-xl font-semibold text-stone-900 mb-0.5">
-          {formatPrice(price, price_currency)}
-        </p>
+        <div className="mb-0.5">
+          {isRentSale ? (
+            <div className="flex flex-col gap-0">
+              <p className="font-serif text-lg font-semibold text-stone-900 leading-tight">
+                {formatPrice(price, price_currency)}
+              </p>
+              <p className="text-xs text-amber-700 font-medium">
+                {formatPrice(rental_price, price_currency)}<span className="text-stone-400 font-normal">/mes</span>
+              </p>
+            </div>
+          ) : (
+            <p className="font-serif text-xl font-semibold text-stone-900">
+              {formatPrice(displayPrice, displayCurrency)}
+              {isRent && <span className="text-sm font-normal text-stone-400">/mes</span>}
+            </p>
+          )}
+        </div>
 
         <h3 className="text-sm font-medium text-stone-800 truncate mb-1">{title}</h3>
 

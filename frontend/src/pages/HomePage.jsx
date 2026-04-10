@@ -24,6 +24,7 @@ export default function HomePage() {
   // Local search state (applied on submit)
   const [localFilters, setLocalFilters] = useState({
     city: '',
+    listing_type: '',
     property_type: '',
     max_price: '',
   })
@@ -40,6 +41,7 @@ export default function HomePage() {
     e.preventDefault()
     const applied = {}
     if (localFilters.city) applied.city = localFilters.city
+    if (localFilters.listing_type) applied.listing_type = localFilters.listing_type
     if (localFilters.property_type) applied.property_type = localFilters.property_type
     if (localFilters.max_price) applied.max_price = Number(localFilters.max_price)
     setFilters(applied)
@@ -82,16 +84,17 @@ export default function HomePage() {
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-medium uppercase tracking-wider text-stone-500">
-                Tipo
+                Modalidad
               </label>
               <select
-                value={localFilters.property_type}
-                onChange={(e) => setLocalFilters((f) => ({ ...f, property_type: e.target.value }))}
+                value={localFilters.listing_type}
+                onChange={(e) => setLocalFilters((f) => ({ ...f, listing_type: e.target.value }))}
                 className="text-sm border-none outline-none bg-transparent text-stone-800 appearance-none"
               >
-                {PROPERTY_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
+                <option value="">Todas</option>
+                <option value="sale">Venta</option>
+                <option value="rent">Arriendo</option>
+                <option value="rent_sale">Arriendo y Venta</option>
               </select>
             </div>
             <div className="flex flex-col gap-1">

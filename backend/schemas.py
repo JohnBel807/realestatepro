@@ -5,7 +5,7 @@ schemas.py — Pydantic schemas (request/response validation)
 from pydantic import BaseModel, EmailStr, validator
 from typing import Optional, List, Any
 from datetime import datetime
-from models import PlanType, SubscriptionStatus, PropertyType
+from models import PlanType, SubscriptionStatus, PropertyType, ListingType
 
 
 # ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -35,6 +35,7 @@ class Token(BaseModel):
 class PropertyBase(BaseModel):
     title: str
     description: Optional[str] = None
+    listing_type: ListingType = ListingType.sale
     price: float
     price_currency: str = "COP"
     area_m2: float
@@ -54,6 +55,13 @@ class PropertyBase(BaseModel):
     has_balcony: bool = False
     has_elevator: bool = False
     pet_friendly: bool = False
+    # Campos de arriendo
+    rental_price: Optional[float] = None
+    rental_deposit: Optional[float] = None
+    rental_min_months: Optional[int] = None
+    rental_includes_admin: bool = False
+    admin_fee: Optional[float] = None
+    available_from: Optional[datetime] = None
 
 class PropertyCreate(PropertyBase):
     pass
@@ -61,6 +69,7 @@ class PropertyCreate(PropertyBase):
 class PropertyUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
+    listing_type: Optional[str] = None
     price: Optional[float] = None
     area_m2: Optional[float] = None
     bedrooms: Optional[int] = None
@@ -69,6 +78,12 @@ class PropertyUpdate(BaseModel):
     main_photo: Optional[str] = None
     features: Optional[List[str]] = None
     is_active: Optional[bool] = None
+    rental_price: Optional[float] = None
+    rental_deposit: Optional[float] = None
+    rental_min_months: Optional[int] = None
+    rental_includes_admin: Optional[bool] = None
+    admin_fee: Optional[float] = None
+    available_from: Optional[datetime] = None
 
 class PropertyOut(PropertyBase):
     id: int
@@ -94,6 +109,7 @@ class PropertyFilters(BaseModel):
     bedrooms: Optional[int] = None
     city: Optional[str] = None
     property_type: Optional[str] = None
+    listing_type: Optional[str] = None
 
 
 # ─── Subscription ─────────────────────────────────────────────────────────────

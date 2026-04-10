@@ -26,6 +26,12 @@ class SubscriptionStatus(str, enum.Enum):
     trialing = "trialing"
 
 
+class ListingType(str, enum.Enum):
+    sale = "sale"           # Venta
+    rent = "rent"           # Arriendo
+    rent_sale = "rent_sale" # Arriendo y venta
+
+
 class PropertyType(str, enum.Enum):
     apartment = "apartment"
     house = "house"
@@ -86,6 +92,17 @@ class Property(Base):
     has_balcony = Column(Boolean, default=False)
     has_elevator = Column(Boolean, default=False)
     pet_friendly = Column(Boolean, default=False)
+
+    # ─── Tipo de negocio ─────────────────────────────────────────────────────
+    listing_type = Column(Enum(ListingType), default=ListingType.sale, index=True)
+
+    # ─── Campos de arriendo ───────────────────────────────────────────────────
+    rental_price = Column(Float, nullable=True)           # precio mensual arriendo
+    rental_deposit = Column(Float, nullable=True)         # depósito / fianza
+    rental_min_months = Column(Integer, nullable=True)    # mínimo de meses
+    rental_includes_admin = Column(Boolean, default=False) # administración incluida
+    admin_fee = Column(Float, nullable=True)              # valor administración
+    available_from = Column(DateTime(timezone=True), nullable=True)
 
     is_active = Column(Boolean, default=True)
     is_featured = Column(Boolean, default=False)
