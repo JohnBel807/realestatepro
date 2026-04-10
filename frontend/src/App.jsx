@@ -16,6 +16,7 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import PricingPage from './pages/PricingPage'
+import LegalPage from './pages/LegalPage'
 
 // Conecta Axios con el sistema de toasts
 function AxiosToastBridge() {
@@ -68,6 +69,7 @@ function AppInner() {
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
               </Route>
+              <Route path="/legal/:slug"    element={<LegalPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>

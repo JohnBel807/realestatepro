@@ -18,6 +18,7 @@ const schema = z.object({
     .regex(/[A-Z]/, 'Debe contener al menos una mayúscula')
     .regex(/[0-9]/, 'Debe contener al menos un número'),
   confirm_password: z.string(),
+  accept_terms: z.boolean().refine(v => v === true, { message: 'Debes aceptar los términos y condiciones' }),
 }).refine((d) => d.password === d.confirm_password, {
   message: 'Las contraseñas no coinciden',
   path: ['confirm_password'],
@@ -144,6 +145,28 @@ export default function RegisterPage() {
             )}
 
             <Field name="confirm_password" label="Confirmar contraseña" type="password" placeholder="••••••••" />
+
+            {/* Checkbox de aceptación */}
+            <div className="flex items-start gap-2.5">
+              <input
+                type="checkbox"
+                id="accept_terms"
+                {...register('accept_terms')}
+                className="mt-0.5 w-4 h-4 rounded border-stone-300 accent-amber-500 shrink-0"
+              />
+              <label htmlFor="accept_terms" className="text-xs text-stone-500 leading-relaxed cursor-pointer">
+                Acepto los{' '}
+                <a href="/legal/terminos" target="_blank" className="text-amber-600 underline hover:text-amber-700">Términos y condiciones</a>
+                {' '}y la{' '}
+                <a href="/legal/privacidad" target="_blank" className="text-amber-600 underline hover:text-amber-700">Política de privacidad</a>
+                {' '}de VelezyRicaurte Inmobiliaria.
+              </label>
+            </div>
+            {errors.accept_terms && (
+              <p className="text-[11px] text-rose-500 flex items-center gap-1">
+                <AlertCircle size={10} />{errors.accept_terms.message}
+              </p>
+            )}
 
             <button
               type="submit"

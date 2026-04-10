@@ -251,30 +251,66 @@ export default function HomePage() {
       </section>
 
       {/* Footer regional */}
-      <footer className="mt-12 py-8 border-t border-stone-200 text-center">
-        <p className="font-serif text-lg mb-1" style={{ color: COLORS.tierra }}>
-          <span style={{ color: COLORS.tierra }}>Velez</span>
-          <span style={{ color: COLORS.verde }}>&</span>
-          <span style={{ color: COLORS.naranja }}>Ricaurte</span>
-          <span className="text-stone-400 font-sans text-sm font-normal ml-2">Inmobiliaria</span>
-        </p>
-        <p className="text-xs text-stone-400">
-          Provincias de Vélez (Santander) y Ricaurte (Boyacá), Colombia
-        </p>
-        <div className="flex justify-center gap-4 mt-3 text-xs text-stone-400 flex-wrap">
-          {['Barbosa', 'Vélez', 'Moniquirá', 'Puente Nacional', 'Landázuri'].map(city => (
-            <button key={city} onClick={() => { setFilters({ city: city.toLowerCase() }); window.scrollTo(0, 0) }}
-              className="hover:text-stone-700 transition-colors">
-              {city}
-            </button>
-          ))}
-        </div>
-        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-stone-400">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-          <a href="mailto:johnroa@velezyricaurte.com"
-            className="hover:text-stone-700 transition-colors">
-            johnroa@velezyricaurte.com
-          </a>
+      <footer className="mt-12 border-t border-stone-200">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* Top */}
+          <div className="flex flex-col md:flex-row justify-between gap-6 mb-6">
+            {/* Marca */}
+            <div>
+              <p className="font-serif text-lg mb-1" style={{ color: COLORS.tierra }}>
+                <span style={{ color: COLORS.tierra }}>Velez</span>
+                <span style={{ color: COLORS.verde }}>&</span>
+                <span style={{ color: COLORS.naranja }}>Ricaurte</span>
+                <span className="text-stone-400 font-sans text-sm font-normal ml-2">Inmobiliaria</span>
+              </p>
+              <p className="text-xs text-stone-400">Provincias de Vélez (Santander) y Ricaurte (Boyacá), Colombia</p>
+              <p className="text-xs text-stone-400 mt-1">NIT: 910.168.07-8 · Tecnoriente J.B.</p>
+            </div>
+            {/* Municipios */}
+            <div>
+              <p className="text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">Municipios</p>
+              <div className="flex flex-wrap gap-2">
+                {['Barbosa', 'Vélez', 'Moniquirá', 'Puente Nacional', 'Landázuri', 'Cimitarra'].map(city => (
+                  <button key={city}
+                    onClick={() => { setFilters({ city: city.toLowerCase() }); window.scrollTo(0, 0) }}
+                    className="text-xs text-stone-400 hover:text-stone-700 transition-colors">
+                    {city}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Contacto */}
+            <div>
+              <p className="text-xs font-medium text-stone-500 mb-2 uppercase tracking-wider">Contacto</p>
+              <a href="mailto:johnroa@velezyricaurte.com" className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-stone-700 transition-colors mb-1">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                johnroa@velezyricaurte.com
+              </a>
+              <a href="https://wa.me/573116861370" target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-stone-700 transition-colors">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.098.543 4.073 1.496 5.787L0 24l6.374-1.671A11.94 11.94 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.846 0-3.587-.49-5.092-1.346l-.366-.214-3.785.992 1.01-3.683-.237-.38A9.955 9.955 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+                +57 311 686 1370
+              </a>
+            </div>
+          </div>
+
+          {/* Bottom — legal */}
+          <div className="pt-4 border-t border-stone-100 flex flex-col md:flex-row items-center justify-between gap-3">
+            <p className="text-xs text-stone-400">
+              © {new Date().getFullYear()} {EMPRESA} · Todos los derechos reservados
+            </p>
+            <div className="flex flex-wrap gap-4 justify-center">
+              {[
+                { to: '/legal/terminos',   label: 'Términos y condiciones' },
+                { to: '/legal/privacidad', label: 'Política de privacidad' },
+                { to: '/legal/reembolsos', label: 'Reembolsos' },
+                { to: '/legal/pqr',        label: 'PQR' },
+              ].map(({ to, label }) => (
+                <a key={to} href={to} className="text-xs text-stone-400 hover:text-stone-700 underline transition-colors">
+                  {label}
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
       </footer>
     </main>
