@@ -333,4 +333,4 @@ export default function PropertyDetailPage() {
       </div>
     </div>
   )
-} 
+}
