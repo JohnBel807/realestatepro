@@ -1,13 +1,14 @@
 import React from 'react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus, Pencil, Trash2, Eye, Crown, AlertCircle, Clock } from 'lucide-react'
 import { useAuthStore, usePropertiesStore } from '../store/useStore'
 import { subscriptionAPI } from '../lib/api'
 import { formatPrice } from '../lib/formatters'
+import ImageUploader from '../components/ImageUploader'
 
 // ─── Zod Schema ───────────────────────────────────────────────────────────────
 const propertySchema = z.object({
@@ -22,6 +23,7 @@ const propertySchema = z.object({
   address: z.string().min(5, 'Dirección requerida'),
   city: z.string().min(2, 'Ciudad requerida'),
   neighborhood: z.string().optional(),
+  photos: z.array(z.object({ url: z.string(), public_id: z.string().optional() })).default([]),
 })
 
 // ─── Property Form ────────────────────────────────────────────────────────────
@@ -32,16 +34,24 @@ function PropertyForm({ onSuccess, onCancel }) {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
     reset,
   } = useForm({
     resolver: zodResolver(propertySchema),
-    defaultValues: { bedrooms: 0, bathrooms: 0, parking_spots: 0, property_type: 'apartment' },
+    defaultValues: { bedrooms: 0, bathrooms: 0, parking_spots: 0, property_type: 'apartment', photos: [] },
   })
 
   const onSubmit = async (data) => {
     setServerError(null)
-    const result = await createProperty(data)
+    // Extraer URLs de fotos y definir foto principal
+    const photoUrls = (data.photos || []).map(p => p.url)
+    const propertyData = {
+      ...data,
+      photos: photoUrls,
+      main_photo: photoUrls[0] || null,
+    }
+    const result = await createProperty(propertyData)
     if (result.success) {
       reset()
       onSuccess?.()
@@ -114,6 +124,21 @@ function PropertyForm({ onSuccess, onCancel }) {
           <Field name="bathrooms" label="Baños" type="number" />
           <Field name="parking_spots" label="Parqueaderos" type="number" />
         </div>
+      </section>
+
+      <section className="bg-stone-50 rounded-xl p-4 border border-stone-200">
+        <h3 className="text-[10px] font-medium uppercase tracking-wider text-stone-500 mb-3">Fotos de la propiedad</h3>
+        <Controller
+          name="photos"
+          control={control}
+          render={({ field }) => (
+            <ImageUploader
+              value={field.value}
+              onChange={field.onChange}
+              maxImages={10}
+            />
+          )}
+        />
       </section>
 
       <section className="bg-stone-50 rounded-xl p-4 border border-stone-200">

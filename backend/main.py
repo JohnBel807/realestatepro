@@ -295,3 +295,47 @@ def my_subscription(
     if not sub:
         raise HTTPException(status_code=404, detail="Sin suscripción activa")
     return sub
+
+
+# ─── Upload Routes ────────────────────────────────────────────────────────────
+from fastapi import File, UploadFile as FastAPIUpload
+from typing import List as TypeList
+from upload import upload_image, delete_image
+
+
+@app.post("/upload/image", tags=["Upload"])
+async def upload_single_image(
+    file: FastAPIUpload = File(...),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Sube una imagen a Cloudinary. Requiere autenticación."""
+    result = await upload_image(file, folder=f"realestate-pro/user-{current_user.id}")
+    return result
+
+
+@app.post("/upload/images", tags=["Upload"])
+async def upload_multiple_images(
+    files: TypeList[FastAPIUpload] = File(...),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Sube hasta 10 imágenes a Cloudinary. Requiere autenticación."""
+    if len(files) > 10:
+        raise HTTPException(status_code=400, detail="Máximo 10 imágenes por vez.")
+    results = []
+    for file in files:
+        result = await upload_image(file, folder=f"realestate-pro/user-{current_user.id}")
+        results.append(result)
+    return {"images": results, "count": len(results)}
+
+
+@app.delete("/upload/image", tags=["Upload"])
+async def delete_single_image(
+    public_id: str,
+    current_user: models.User = Depends(get_current_user),
+):
+    """Elimina una imagen de Cloudinary por su public_id."""
+    # Verificar que el public_id pertenece al usuario
+    if f"user-{current_user.id}" not in public_id:
+        raise HTTPException(status_code=403, detail="No puedes eliminar imágenes de otros usuarios.")
+    success = await delete_image(public_id)
+    return {"deleted": success}
