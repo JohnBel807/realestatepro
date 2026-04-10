@@ -306,26 +306,49 @@ function PropertyForm({ onSuccess, onCancel }) {
 function EditPropertyModal({ property, onClose, onSaved }) {
   const { updateProperty } = usePropertiesStore()
   const [serverError, setServerError] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  // Schema relajado para edición — sin refines estrictos
+  const editSchema = z.object({
+    listing_type:          z.enum(['sale', 'rent', 'rent_sale']),
+    title:                 z.string().min(3, 'Mínimo 3 caracteres'),
+    description:           z.string().optional(),
+    price:                 z.coerce.number().min(0).optional().default(0),
+    rental_price:          z.coerce.number().min(0).optional(),
+    rental_deposit:        z.coerce.number().min(0).optional(),
+    rental_min_months:     z.coerce.number().int().min(0).optional(),
+    rental_includes_admin: z.boolean().default(false),
+    admin_fee:             z.coerce.number().min(0).optional(),
+    area_m2:               z.coerce.number().positive('Área requerida'),
+    bedrooms:              z.coerce.number().int().min(0).default(0),
+    bathrooms:             z.coerce.number().int().min(0).default(0),
+    parking_spots:         z.coerce.number().int().min(0).default(0),
+    property_type:         z.enum(['apartment', 'house', 'office', 'land', 'commercial']),
+    address:               z.string().min(3, 'Dirección requerida'),
+    city:                  z.string().min(2, 'Ciudad requerida'),
+    neighborhood:          z.string().optional(),
+    photos:                z.array(z.object({ url: z.string(), public_id: z.string().optional() })).default([]),
+  })
 
   const {
     register,
     handleSubmit,
     control,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm({
-    resolver: zodResolver(propertySchema),
+    resolver: zodResolver(editSchema),
     defaultValues: {
       listing_type:           property.listing_type || 'sale',
       title:                  property.title || '',
       description:            property.description || '',
       price:                  property.price || 0,
-      rental_price:           property.rental_price || '',
-      rental_deposit:         property.rental_deposit || '',
-      rental_min_months:      property.rental_min_months || '',
+      rental_price:           property.rental_price || 0,
+      rental_deposit:         property.rental_deposit || 0,
+      rental_min_months:      property.rental_min_months || 0,
       rental_includes_admin:  property.rental_includes_admin || false,
-      admin_fee:              property.admin_fee || '',
-      area_m2:                property.area_m2 || '',
+      admin_fee:              property.admin_fee || 0,
+      area_m2:                property.area_m2 || 0,
       bedrooms:               property.bedrooms || 0,
       bathrooms:              property.bathrooms || 0,
       parking_spots:          property.parking_spots || 0,
@@ -333,7 +356,9 @@ function EditPropertyModal({ property, onClose, onSaved }) {
       address:                property.address || '',
       city:                   property.city || '',
       neighborhood:           property.neighborhood || '',
-      photos: (property.photos || []).map(url => ({ url, public_id: '' })),
+      photos:                 (property.photos || []).map(url =>
+        typeof url === 'string' ? { url, public_id: '' } : url
+      ),
     },
   })
 
@@ -343,18 +368,44 @@ function EditPropertyModal({ property, onClose, onSaved }) {
 
   const onSubmit = async (data) => {
     setServerError(null)
-    const photoUrls = (data.photos || []).map(p => p.url)
-    const payload = {
-      ...data,
-      photos:     photoUrls,
-      main_photo: photoUrls[0] || property.main_photo || null,
-      price:      isSale ? (Number(data.price) || 0) : 0,
-    }
-    const result = await updateProperty(property.id, payload)
-    if (result.success) {
-      onSaved()
-    } else {
-      setServerError(result.error)
+    setSaving(true)
+    try {
+      const photoUrls = (data.photos || []).map(p =>
+        typeof p === 'string' ? p : p.url
+      ).filter(Boolean)
+
+      const payload = {
+        title:                  data.title,
+        description:            data.description || null,
+        listing_type:           data.listing_type,
+        property_type:          data.property_type,
+        price:                  Number(data.price) || 0,
+        rental_price:           data.rental_price ? Number(data.rental_price) : null,
+        rental_deposit:         data.rental_deposit ? Number(data.rental_deposit) : null,
+        rental_min_months:      data.rental_min_months ? Number(data.rental_min_months) : null,
+        rental_includes_admin:  data.rental_includes_admin || false,
+        admin_fee:              data.admin_fee ? Number(data.admin_fee) : null,
+        area_m2:                Number(data.area_m2),
+        bedrooms:               Number(data.bedrooms) || 0,
+        bathrooms:              Number(data.bathrooms) || 0,
+        parking_spots:          Number(data.parking_spots) || 0,
+        address:                data.address,
+        city:                   data.city,
+        neighborhood:           data.neighborhood || null,
+        photos:                 photoUrls,
+        main_photo:             photoUrls[0] || property.main_photo || null,
+      }
+
+      const result = await updateProperty(property.id, payload)
+      if (result.success) {
+        onSaved()
+      } else {
+        setServerError(result.error || 'Error al guardar. Intenta de nuevo.')
+      }
+    } catch (err) {
+      setServerError('Error inesperado. Intenta de nuevo.')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -497,9 +548,9 @@ function EditPropertyModal({ property, onClose, onSaved }) {
                 className="px-4 py-2 text-sm border border-stone-200 rounded-lg hover:bg-stone-100 transition-colors">
                 Cancelar
               </button>
-              <button type="submit" disabled={isSubmitting}
+              <button type="submit" disabled={saving}
                 className="px-5 py-2 text-sm bg-stone-900 text-white rounded-lg hover:bg-stone-800 disabled:opacity-50 transition-colors flex items-center gap-2">
-                {isSubmitting
+                {saving
                   ? <><span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />Guardando…</>
                   : '✓ Guardar cambios'}
               </button>
