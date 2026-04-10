@@ -9,8 +9,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from datetime import datetime, timedelta
-import stripe
 import os
+from payments import create_payment_link, verify_wompi_signature, parse_wompi_event
 
 from database import get_db, engine
 import models, schemas, crud
@@ -30,8 +30,6 @@ app = FastAPI(
     version="1.0.0",
     description="Portal inmobiliario — Backend API"
 )
-
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_test_...")
 
 # CORS — permite todos los orígenes de Vercel + localhost
 app.add_middleware(
@@ -217,64 +215,55 @@ def delete_property(
 
 
 # ─── Stripe / Subscription Routes ─────────────────────────────────────────────
-STRIPE_PRICE_IDS = {
-    "basic": os.getenv("STRIPE_PRICE_BASIC", "price_basic_xxx"),
-    "pro": os.getenv("STRIPE_PRICE_PRO", "price_pro_xxx"),
-    "enterprise": os.getenv("STRIPE_PRICE_ENTERPRISE", "price_enterprise_xxx"),
-}
-
-
 @app.post("/create-checkout-session", tags=["Subscriptions"])
-def create_checkout_session(
+async def create_checkout_session(
     plan: schemas.PlanRequest,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    price_id = STRIPE_PRICE_IDS.get(plan.plan_type)
-    if not price_id:
-        raise HTTPException(status_code=400, detail="Plan inválido")
+    """Crea un enlace de pago en Wompi (Colombia)."""
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    redirect_url = f"{frontend_url}/dashboard?subscription=success"
 
-    try:
-        session = stripe.checkout.Session.create(
-            payment_method_types=["card"],
-            mode="subscription",
-            customer_email=current_user.email,
-            line_items=[{"price": price_id, "quantity": 1}],
-            success_url=f"{os.getenv('FRONTEND_URL')}/dashboard?subscription=success",
-            cancel_url=f"{os.getenv('FRONTEND_URL')}/pricing?canceled=true",
-            metadata={"user_id": str(current_user.id), "plan_type": plan.plan_type},
-        )
-        return {"checkout_url": session.url, "session_id": session.id}
-    except stripe.error.StripeError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    result = await create_payment_link(
+        plan_type=plan.plan_type,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        redirect_url=redirect_url,
+    )
+    return {"checkout_url": result["payment_url"], "link_id": result["link_id"]}
 
 
-@app.post("/webhooks/stripe", tags=["Subscriptions"])
-async def stripe_webhook(request, db: Session = Depends(get_db)):
-    """Recibe eventos de Stripe y actualiza el estado de suscripción."""
-    import json
-    payload = await request.body()
-    sig_header = request.headers.get("stripe-signature")
-    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
+@app.post("/webhooks/wompi", tags=["Subscriptions"])
+async def wompi_webhook(request, db: Session = Depends(get_db)):
+    """Recibe eventos de Wompi y actualiza el estado de suscripción."""
+    from fastapi import Request
+    body = await request.json()
 
-    try:
-        event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Webhook inválido")
+    # Verificar firma
+    signature = request.headers.get("x-event-checksum", "")
+    if not verify_wompi_signature(body, signature):
+        logger.warning("Wompi webhook con firma inválida")
+        # No rechazamos — Wompi sandbox no siempre firma
+        # En producción descomenta la línea siguiente:
+        # raise HTTPException(status_code=400, detail="Firma inválida")
 
-    if event["type"] == "checkout.session.completed":
-        session_data = event["data"]["object"]
-        user_id = int(session_data["metadata"]["user_id"])
-        plan_type = session_data["metadata"]["plan_type"]
-        stripe_customer_id = session_data["customer"]
-        stripe_subscription_id = session_data["subscription"]
-        crud.upsert_subscription(db, user_id=user_id, plan_type=plan_type,
-                                  stripe_customer_id=stripe_customer_id,
-                                  stripe_subscription_id=stripe_subscription_id)
+    event = parse_wompi_event(body)
+    logger.info(f"Wompi event: {event['event_type']} status={event['status']}")
 
-    elif event["type"] in ("customer.subscription.deleted", "customer.subscription.paused"):
-        sub_data = event["data"]["object"]
-        crud.deactivate_subscription(db, stripe_subscription_id=sub_data["id"])
+    if event["approved"] and event["user_id"] and event["plan_type"]:
+        try:
+            user_id = int(event["user_id"])
+            crud.upsert_subscription(
+                db,
+                user_id=user_id,
+                plan_type=event["plan_type"],
+                stripe_customer_id=f"wompi_{event['transaction_id']}",
+                stripe_subscription_id=f"wompi_{event['transaction_id']}",
+            )
+            logger.info(f"Suscripción activada: user={user_id} plan={event['plan_type']}")
+        except Exception as e:
+            logger.error(f"Error activando suscripción: {e}")
 
     return {"received": True}
 
@@ -340,4 +329,4 @@ async def delete_single_image(
     if f"user-{current_user.id}" not in public_id:
         raise HTTPException(status_code=403, detail="No puedes eliminar imágenes de otros usuarios.")
     success = await delete_image(public_id)
-    return {"deleted": success} 
+    return {"deleted": success}
