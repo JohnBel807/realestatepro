@@ -9,6 +9,7 @@ import { ToastProvider, useToast } from './components/ui/Toast'
 import Navbar from './components/Navbar'
 import ProtectedRoute from './components/ProtectedRoute'
 import WhatsAppButton from './components/WhatsAppButton'
+import MarketplaceSidebar from './components/MarketplaceSidebar'
 
 import HomePage from './pages/HomePage'
 import PropertyDetailPage from './pages/PropertyDetailPage'
@@ -77,6 +78,8 @@ function AppInner() {
       </div>
       {/* WhatsApp flotante — siempre visible */}
       <WhatsAppButton />
+      {/* Sidebar Marketplace */}
+      <MarketplaceSidebar />
     </BrowserRouter>
   )
 }
