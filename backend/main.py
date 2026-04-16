@@ -10,7 +10,9 @@ from sqlalchemy.orm import Session
 from typing import Optional, List
 from datetime import datetime, timedelta
 import os
-from payments import create_payment_link, verify_wompi_signature, parse_wompi_event
+from payments    import create_payment_link, verify_wompi_signature, parse_wompi_event
+from cross_auth  import router as cross_auth_router
+from email_service import send_welcome_email
 
 from database import get_db, engine
 import models, schemas, crud
@@ -124,9 +126,31 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     return {"access_token": token, "token_type": "bearer"}
 
 
-@app.get("/auth/me", response_model=schemas.UserOut, tags=["Auth"])
-def me(current_user: models.User = Depends(get_current_user)):
-    return current_user
+@app.get("/auth/me", tags=["Auth"])
+def me(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Devuelve datos del usuario + info de suscripción activa.
+    Incluye subscription_plan y has_active_subscription para compatibilidad
+    con velezyricaurte.info SSO."""
+    sub = db.query(models.Subscription).filter(
+        models.Subscription.user_id == current_user.id,
+        models.Subscription.status == "active",
+    ).first()
+
+    return {
+        "id":                     current_user.id,
+        "email":                  current_user.email,
+        "full_name":              current_user.full_name,
+        "phone":                  current_user.phone,
+        "avatar_url":             current_user.avatar_url if hasattr(current_user, "avatar_url") else None,
+        "is_active":              current_user.is_active,
+        "trial_ends_at":          current_user.trial_ends_at,
+        "created_at":             current_user.created_at,
+        "subscription_plan":      sub.plan_type if sub else "free",
+        "has_active_subscription": sub is not None,
+    }
 
 
 @app.get("/auth/trial-status", tags=["Auth"])

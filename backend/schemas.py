@@ -24,6 +24,9 @@ class UserOut(BaseModel):
     is_active: bool
     trial_ends_at: Optional[datetime]
     created_at: datetime
+    # Campos que necesita velezyricaurte.info para SSO y descuentos
+    subscription_plan: Optional[str] = "free"
+    has_active_subscription: Optional[bool] = False
     class Config: from_attributes = True
 
 class Token(BaseModel):
