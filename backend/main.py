@@ -44,15 +44,82 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    """Crea tablas y loguea diagnóstico al arrancar."""
+    """Crea/verifica tablas y loguea diagnóstico al arrancar."""
     try:
-        models.Base.metadata.create_all(bind=engine)
+        # checkfirst=True evita error si la tabla ya existe
+        models.Base.metadata.create_all(bind=engine, checkfirst=True)
         logger.info("✅ Tablas creadas/verificadas correctamente")
+
+        # Agregar columnas nuevas si no existen (reemplaza alembic)
+        _apply_schema_patches()
     except Exception as e:
-        logger.error(f"❌ Error creando tablas: {e}")
+        logger.error(f"❌ Error en startup: {e}")
+
     logger.info(f"🌐 FRONTEND_URL: {os.getenv('FRONTEND_URL', 'no definida')}")
     logger.info(f"🗄️  DATABASE_URL definida: {bool(os.getenv('DATABASE_URL'))}")
     logger.info(f"🔑 JWT_SECRET_KEY definida: {bool(os.getenv('JWT_SECRET_KEY'))}")
+
+
+def _apply_schema_patches():
+    """Aplica columnas nuevas que no existían en el schema original.
+    Seguro de correr múltiples veces — verifica antes de agregar."""
+    from sqlalchemy import text, inspect as sa_inspect
+    with engine.connect() as conn:
+        inspector = sa_inspect(engine)
+        user_cols = [c['name'] for c in inspector.get_columns('users')]
+        prop_cols = [c['name'] for c in inspector.get_columns('properties')]
+
+        patches = []
+
+        # Columnas de usuario
+        if 'trial_ends_at' not in user_cols:
+            patches.append("ALTER TABLE users ADD COLUMN trial_ends_at TIMESTAMPTZ")
+        if 'is_superuser' not in user_cols:
+            patches.append("ALTER TABLE users ADD COLUMN is_superuser BOOLEAN NOT NULL DEFAULT false")
+        if 'password_reset_token' not in user_cols:
+            patches.append("ALTER TABLE users ADD COLUMN password_reset_token VARCHAR(255)")
+        if 'password_reset_expires' not in user_cols:
+            patches.append("ALTER TABLE users ADD COLUMN password_reset_expires TIMESTAMPTZ")
+
+        # Columnas de propiedades
+        if 'listing_type' not in prop_cols:
+            # Crear enum si no existe
+            result = conn.execute(text(
+                "SELECT 1 FROM pg_type WHERE typname = 'listing_type'"
+            ))
+            if not result.fetchone():
+                conn.execute(text(
+                    "CREATE TYPE listing_type AS ENUM ('sale', 'rent', 'rent_sale')"
+                ))
+                conn.commit()
+            patches.append(
+                "ALTER TABLE properties ADD COLUMN listing_type listing_type DEFAULT 'sale'"
+            )
+        if 'rental_price' not in prop_cols:
+            patches.append("ALTER TABLE properties ADD COLUMN rental_price FLOAT")
+        if 'rental_deposit' not in prop_cols:
+            patches.append("ALTER TABLE properties ADD COLUMN rental_deposit FLOAT")
+        if 'rental_min_months' not in prop_cols:
+            patches.append("ALTER TABLE properties ADD COLUMN rental_min_months INTEGER")
+        if 'rental_includes_admin' not in prop_cols:
+            patches.append(
+                "ALTER TABLE properties ADD COLUMN rental_includes_admin BOOLEAN DEFAULT false"
+            )
+        if 'admin_fee' not in prop_cols:
+            patches.append("ALTER TABLE properties ADD COLUMN admin_fee FLOAT")
+        if 'available_from' not in prop_cols:
+            patches.append(
+                "ALTER TABLE properties ADD COLUMN available_from TIMESTAMPTZ"
+            )
+
+        for sql in patches:
+            try:
+                conn.execute(text(sql))
+                conn.commit()
+                logger.info(f"✅ Patch aplicado: {sql[:60]}")
+            except Exception as e:
+                logger.warning(f"⚠️  Patch omitido (ya existe?): {e}")
+                conn.rollback()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
