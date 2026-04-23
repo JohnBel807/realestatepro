@@ -239,6 +239,144 @@ def trial_status(current_user: models.User = Depends(get_current_user)):
     }
 
 
+# ─── Recuperar contraseña ────────────────────────────────────────────────────
+import secrets as secrets_module
+
+@app.post("/auth/forgot-password", tags=["Auth"])
+async def forgot_password(body: dict, db: Session = Depends(get_db)):
+    email = (body.get("email") or "").strip().lower()
+    if not email:
+        raise HTTPException(400, "Email requerido")
+
+    user = crud.get_user_by_email(db, email=email)
+    # Siempre 200 aunque no exista — seguridad
+    if not user:
+        return {"message": "Si el correo existe, recibirás un enlace en breve."}
+
+    token = secrets_module.token_urlsafe(32)
+    user.password_reset_token   = token
+    user.password_reset_expires = datetime.utcnow() + timedelta(hours=2)
+    db.commit()
+
+    frontend_url = os.getenv("FRONTEND_URL", "https://www.velezyricaurte.com")
+    reset_link   = f"{frontend_url}/reset-password?token={token}"
+
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;">
+      <h2 style="color:#6B4E2A;font-family:Georgia,serif;">VelezyRicaurte Inmobiliaria</h2>
+      <p>Hola <strong>{user.full_name}</strong>,</p>
+      <p>Recibimos una solicitud para restablecer tu contraseña.</p>
+      <p style="margin:24px 0;">
+        <a href="{reset_link}"
+           style="background:#C4631A;color:#fff;padding:12px 24px;border-radius:8px;
+                  text-decoration:none;font-weight:bold;display:inline-block;">
+          Restablecer contraseña →
+        </a>
+      </p>
+      <p style="color:#888;font-size:13px;">
+        Este enlace expira en 2 horas. Si no solicitaste este cambio, ignora este correo.
+      </p>
+      <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
+      <p style="color:#aaa;font-size:11px;">VelezyRicaurte Inmobiliaria · johnroa@velezyricaurte.com</p>
+    </div>
+    """
+    try:
+        from email_service import _send
+        _send(email, "Restablecer contraseña — VelezyRicaurte Inmobiliaria", html)
+    except Exception as e:
+        logger.error(f"Error enviando correo reset: {e}")
+
+    return {"message": "Si el correo existe, recibirás un enlace en breve."}
+
+
+@app.post("/auth/reset-password", tags=["Auth"])
+def reset_password(body: dict, db: Session = Depends(get_db)):
+    token    = (body.get("token") or "").strip()
+    password = (body.get("password") or "").strip()
+
+    if not token or not password:
+        raise HTTPException(400, "Token y contraseña son requeridos")
+    if len(password) < 8:
+        raise HTTPException(400, "Mínimo 8 caracteres")
+
+    user = db.query(models.User).filter(
+        models.User.password_reset_token == token
+    ).first()
+
+    if not user:
+        raise HTTPException(400, "Token inválido o ya utilizado")
+    if user.password_reset_expires < datetime.utcnow():
+        raise HTTPException(400, "El enlace expiró. Solicita uno nuevo.")
+
+    user.hashed_password        = get_password_hash(password)
+    user.password_reset_token   = None
+    user.password_reset_expires = None
+    db.commit()
+
+    return {"message": "¡Contraseña actualizada! Ya puedes iniciar sesión."}
+
+
+# ─── Admin / Superusuario ─────────────────────────────────────────────────────
+def get_superuser(current_user: models.User = Depends(get_current_user)):
+    if not current_user.is_superuser:
+        raise HTTPException(403, "Acción reservada para administradores")
+    return current_user
+
+
+@app.get("/admin/users", tags=["Admin"])
+def admin_list_users(
+    skip: int = 0, limit: int = 50,
+    db: Session = Depends(get_db),
+    _: models.User = Depends(get_superuser),
+):
+    users = db.query(models.User).offset(skip).limit(limit).all()
+    return [
+        {
+            "id":            u.id,
+            "email":         u.email,
+            "full_name":     u.full_name,
+            "is_active":     u.is_active,
+            "is_superuser":  u.is_superuser,
+            "trial_ends_at": u.trial_ends_at,
+            "created_at":    u.created_at,
+        }
+        for u in users
+    ]
+
+
+@app.delete("/admin/properties/{property_id}", tags=["Admin"])
+def admin_delete_property(
+    property_id: int,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_superuser),
+):
+    prop = db.query(models.Property).filter(
+        models.Property.id == property_id
+    ).first()
+    if not prop:
+        raise HTTPException(404, "Propiedad no encontrada")
+    db.delete(prop)
+    db.commit()
+    logger.info(f"Admin {admin.email} eliminó propiedad #{property_id}")
+    return {"deleted": True, "property_id": property_id}
+
+
+@app.put("/admin/users/{user_id}/toggle-active", tags=["Admin"])
+def admin_toggle_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_superuser),
+):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(404, "Usuario no encontrado")
+    if user.is_superuser:
+        raise HTTPException(403, "No puedes desactivar otro superusuario")
+    user.is_active = not user.is_active
+    db.commit()
+    return {"user_id": user_id, "is_active": user.is_active}
+
+
 # ─── Properties Routes ────────────────────────────────────────────────────────
 @app.get("/properties", response_model=schemas.PropertyList, tags=["Properties"])
 def list_properties(

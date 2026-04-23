@@ -115,7 +115,14 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-sm text-stone-500 mt-5">
+        <p className="text-center mt-3">
+          <Link to="/forgot-password"
+            className="text-xs text-stone-400 hover:text-stone-600 transition-colors">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </p>
+
+        <p className="text-center text-sm text-stone-500 mt-3">
           ¿No tienes cuenta?{' '}
           <Link to="/register" className="text-amber-600 hover:text-amber-700 font-medium">
             Regístrate gratis
