@@ -52,7 +52,11 @@ class User(Base):
     avatar_url = Column(String(500), nullable=True)
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
+    is_superuser = Column(Boolean, default=False)          # Admin sin restricciones
     trial_ends_at = Column(DateTime(timezone=True), nullable=True)
+    # Recuperación de contraseña
+    password_reset_token = Column(String(255), nullable=True)
+    password_reset_expires = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

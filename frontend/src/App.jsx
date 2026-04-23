@@ -18,6 +18,8 @@ import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import PricingPage from './pages/PricingPage'
 import LegalPage from './pages/LegalPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
+import ResetPasswordPage  from './pages/ResetPasswordPage'
 
 // Conecta Axios con el sistema de toasts
 function AxiosToastBridge() {
@@ -70,7 +72,9 @@ function AppInner() {
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
               </Route>
-              <Route path="/legal/:slug"    element={<LegalPage />} />
+              <Route path="/legal/:slug"       element={<LegalPage />} />
+              <Route path="/forgot-password"      element={<ForgotPasswordPage />} />
+              <Route path="/reset-password"       element={<ResetPasswordPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>

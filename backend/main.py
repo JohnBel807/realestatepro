@@ -101,13 +101,22 @@ def require_active_subscription(
 
 
 # ─── Auth Routes ──────────────────────────────────────────────────────────────
-@app.post("/auth/register", response_model=schemas.UserOut, tags=["Auth"])
+@app.post("/auth/register", tags=["Auth"])
 def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
     if crud.get_user_by_email(db, email=user_in.email):
         raise HTTPException(status_code=400, detail="El email ya está registrado")
     hashed = get_password_hash(user_in.password)
-    user = crud.create_user(db, user_in=user_in, hashed_password=hashed)
-    return user
+    new_user = crud.create_user(db, user_in=user_in, hashed_password=hashed)
+    # Correo de bienvenida (no bloquea el response)
+    try:
+        send_welcome_email(new_user.email, new_user.full_name or "")
+    except Exception as e:
+        logger.warning(f"No se pudo enviar correo de bienvenida: {e}")
+    return {
+        "id": new_user.id, "email": new_user.email,
+        "full_name": new_user.full_name, "is_active": new_user.is_active,
+        "trial_ends_at": new_user.trial_ends_at, "created_at": new_user.created_at,
+    }
 
 
 @app.post("/auth/token", response_model=schemas.Token, tags=["Auth"])
