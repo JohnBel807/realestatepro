@@ -1,53 +1,47 @@
 """
-email_service.py — Correos transaccionales
-Soporta puerto 587 (STARTTLS) y 465 (SSL directo)
+email_service.py — Correos via Resend API (HTTP, no SMTP)
+Resend funciona desde Railway sin bloqueos de firewall.
+Registro gratuito: https://resend.com — 3,000 correos/mes gratis
+Variable requerida: RESEND_API_KEY
 """
 
 import os
-import smtplib
+import httpx
 import logging
-from email.mime.multipart import MIMEMultipart
-from email.mime.text      import MIMEText
 
 logger = logging.getLogger(__name__)
 
-SMTP_HOST  = os.getenv("SMTP_HOST",  "smtp.zoho.com")
-SMTP_PORT  = int(os.getenv("SMTP_PORT", "465"))
-SMTP_USER  = os.getenv("SMTP_USER",  "")
-SMTP_PASS  = os.getenv("SMTP_PASSWORD", "")
-EMAIL_FROM = os.getenv("EMAIL_FROM",
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+FROM_EMAIL     = os.getenv("EMAIL_FROM",
     "VelezyRicaurte Inmobiliaria <johnroa@velezyricaurte.com>")
 
 
 def _send(to: str, subject: str, html: str) -> bool:
-    if not SMTP_USER or not SMTP_PASS:
-        logger.warning("SMTP no configurado — correo no enviado.")
+    """Envía correo via Resend API. Retorna True si fue exitoso."""
+    if not RESEND_API_KEY:
+        logger.warning("RESEND_API_KEY no configurada — correo no enviado.")
         return False
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"]    = EMAIL_FROM
-        msg["To"]      = to
-        msg.attach(MIMEText(html, "html", "utf-8"))
-
-        if SMTP_PORT == 465:
-            # SSL directo — Zoho lo prefiere en este puerto
-            import ssl
-            ctx = ssl.create_default_context()
-            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT,
-                                  context=ctx, timeout=15) as server:
-                server.login(SMTP_USER, SMTP_PASS)
-                server.sendmail(SMTP_USER, to, msg.as_string())
+        resp = httpx.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type":  "application/json",
+            },
+            json={
+                "from":    FROM_EMAIL,
+                "to":      [to],
+                "subject": subject,
+                "html":    html,
+            },
+            timeout=15,
+        )
+        if resp.status_code in (200, 201):
+            logger.info(f"✅ Correo enviado a {to}: {subject}")
+            return True
         else:
-            # STARTTLS para puerto 587
-            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
-                server.ehlo()
-                server.starttls()
-                server.login(SMTP_USER, SMTP_PASS)
-                server.sendmail(SMTP_USER, to, msg.as_string())
-
-        logger.info(f"✅ Correo enviado a {to}: {subject}")
-        return True
+            logger.error(f"Resend error {resp.status_code}: {resp.text}")
+            return False
     except Exception as e:
         logger.error(f"Error enviando correo a {to}: {e}")
         return False
@@ -116,11 +110,10 @@ def send_welcome_email(to_email: str, full_name: str) -> bool:
                 <a href="https://www.velezyricaurte.com/dashboard"
                   style="background:#6B4E2A;color:#fff;font-size:13px;font-weight:600;
                          padding:10px 24px;border-radius:8px;text-decoration:none;display:inline-block;">
-                  Ir al portal inmobiliario →
+                  Ir al portal →
                 </a>
               </td></tr>
             </table>
-
             <table width="100%" cellpadding="0" cellspacing="0"
               style="background:#FFF8F0;border-radius:12px;border:1.5px solid #FFE4CC;">
               <tr><td style="padding:18px 20px;">
@@ -169,6 +162,6 @@ def send_welcome_email(to_email: str, full_name: str) -> bool:
 </html>"""
     return _send(
         to_email,
-        f"¡Bienvenido a VelezyRicaurte, {first_name}! 🎉 30 días gratis en ambos portales",
+        f"¡Bienvenido a VelezyRicaurte, {first_name}! 🎉 30 días gratis",
         html,
     )
