@@ -125,7 +125,7 @@ async def create_payment_link(
     checkout_url = f"https://checkout.wompi.co/l/{link_id}"
     integrity    = _generate_integrity(reference, amount_in_cents)
     if integrity:
-        checkout_url += f"&signature:integrity={integrity}"
+        checkout_url += f"?signature:integrity={integrity}"
 
     logger.info(
         f"Wompi link creado OK: id={link_id} plan={plan_type} "
