@@ -65,9 +65,14 @@ export const useAuthStore = create(
       fetchSubscription: async () => {
         try {
           const { data } = await subscriptionAPI.getMySubscription()
-          set({ subscription: data })
-        } catch (err) {
-          // 404 es esperado si el usuario no tiene suscripción activa
+          // Si no tiene suscripción activa el backend devuelve {status: "none"}
+          if (data?.status === 'none') {
+            set({ subscription: null })
+          } else {
+            set({ subscription: data })
+          }
+        } catch {
+          // Silenciar cualquier error — suscripción es opcional
           set({ subscription: null })
         }
       },

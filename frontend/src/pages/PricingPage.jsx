@@ -221,7 +221,7 @@ export default function PricingPage() {
   const authed   = isAuthenticated()
   const inTrial  = user?.trial_ends_at && new Date(user.trial_ends_at) > new Date()
   const hasSub   = subscription?.status === 'active'
-  const currPlan = subscription?.plan_type
+  const currPlan = subscription?.plan_type ?? null
 
   const [checkoutData, setCheckoutData] = useState(null)
 
