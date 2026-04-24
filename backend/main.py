@@ -736,24 +736,6 @@ def delete_property(
 
 
 # ─── Stripe / Subscription Routes ─────────────────────────────────────────────
-@app.post("/create-checkout-session", tags=["Subscriptions"])
-async def create_checkout_session(
-    plan: schemas.PlanRequest,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
-):
-    """Crea un enlace de pago en Wompi (Colombia)."""
-    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
-    redirect_url = f"{frontend_url}/dashboard?subscription=success"
-
-    result = await create_payment_link(
-        plan_type=plan.plan_type,
-        user_id=current_user.id,
-        user_email=current_user.email,
-        redirect_url=redirect_url,
-    )
-    return {"checkout_url": result["payment_url"], "link_id": result["link_id"]}
-
 
 @app.post("/webhooks/wompi", tags=["Subscriptions"])
 async def wompi_webhook(request, db: Session = Depends(get_db)):

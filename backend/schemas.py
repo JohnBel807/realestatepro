@@ -129,6 +129,11 @@ class PlanRequest(BaseModel):
 
     @validator("plan_type")
     def validate_plan(cls, v):
-        if v not in ("basic", "pro", "enterprise"):
-            raise ValueError("Plan debe ser: basic, pro, o enterprise")
+        valid = {
+            "basic", "pro", "enterprise",
+            "basic_monthly", "pro_monthly", "enterprise_monthly",
+            "basic_annual",  "pro_annual",  "enterprise_annual",
+        }
+        if v not in valid:
+            raise ValueError(f"Plan inválido: {v}")
         return v
