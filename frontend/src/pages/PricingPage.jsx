@@ -1,284 +1,299 @@
+// src/pages/PricingPage.jsx — Planes mensual / anual con 2 meses gratis
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { CheckCircle2, Crown, Zap, Building2, AlertCircle, Clock } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Check, Minus, Crown, Zap, Building2, Star } from 'lucide-react'
 import { useAuthStore } from '../store/useStore'
 import { subscriptionAPI } from '../lib/api'
 
+// ─── Datos de planes ──────────────────────────────────────────────────────────
 const PLANS = [
   {
-    id: 'basic',
-    name: 'Basic',
-    icon: Zap,
-    price: 19_900,
-    description: 'Para propietarios que publican ocasionalmente',
+    key:   'basic',
+    name:  'Basic',
+    icon:  <Zap size={20} />,
+    color: '#6B4E2A',
+    bg:    '#F5EFE6',
+    desc:  'Para propietarios que publican ocasionalmente',
+    monthly: 19900,
+    annual:  199000,
     features: [
-      'Hasta 5 propiedades activas',
-      '5 fotos por propiedad',
-      'Listado estándar',
-      'Soporte por email',
-      'Estadísticas básicas',
+      { text: 'Hasta 5 propiedades activas',        ok: true },
+      { text: '5 fotos por propiedad',               ok: true },
+      { text: 'Listado estándar',                    ok: true },
+      { text: 'Soporte por email',                   ok: true },
+      { text: 'Estadísticas básicas',                ok: true },
+      { text: 'Propiedades destacadas',              ok: false },
+      { text: 'Fotos ilimitadas',                    ok: false },
+      { text: 'Soporte prioritario',                 ok: false },
     ],
-    excluded: ['Propiedades destacadas', 'Fotos ilimitadas', 'Soporte prioritario'],
   },
   {
-    id: 'pro',
-    name: 'Pro',
-    icon: Crown,
-    price: 59_900,
-    description: 'Para agentes y vendedores activos',
+    key:     'pro',
+    name:    'Pro',
+    icon:    <Crown size={20} />,
+    color:   '#C4631A',
+    bg:      '#FFF8F0',
+    desc:    'Para agentes y vendedores activos',
+    monthly: 59900,
+    annual:  599000,
     popular: true,
     features: [
-      'Hasta 25 propiedades activas',
-      '15 fotos por propiedad',
-      '2 propiedades destacadas al mes',
-      'Soporte prioritario',
-      'Estadísticas avanzadas',
-      'Badge de vendedor verificado',
+      { text: 'Hasta 25 propiedades activas',        ok: true },
+      { text: '15 fotos por propiedad',              ok: true },
+      { text: '2 propiedades destacadas al mes',     ok: true },
+      { text: 'Soporte prioritario',                 ok: true },
+      { text: 'Estadísticas avanzadas',              ok: true },
+      { text: 'Badge de vendedor verificado',        ok: true },
+      { text: 'Propiedades ilimitadas',              ok: false },
+      { text: 'Fotos ilimitadas',                    ok: false },
     ],
-    excluded: ['Propiedades ilimitadas'],
   },
   {
-    id: 'enterprise',
-    name: 'Enterprise',
-    icon: Building2,
-    price: 99_000,
-    description: 'Para inmobiliarias y grandes portafolios',
+    key:   'enterprise',
+    name:  'Enterprise',
+    icon:  <Building2 size={20} />,
+    color: '#2D6B2A',
+    bg:    '#F0F7F0',
+    desc:  'Para inmobiliarias y grandes portafolios',
+    monthly: 99000,
+    annual:  990000,
     features: [
-      'Propiedades ilimitadas',
-      'Fotos ilimitadas',
-      'Destacados ilimitados',
-      'Soporte dedicado 24/7',
-      'API access',
-      'Dashboard multi-usuario',
+      { text: 'Propiedades ilimitadas',              ok: true },
+      { text: 'Fotos ilimitadas',                    ok: true },
+      { text: 'Destacados ilimitados',               ok: true },
+      { text: 'Soporte dedicado 24/7',               ok: true },
+      { text: 'Estadísticas avanzadas',              ok: true },
+      { text: 'Badge de vendedor verificado',        ok: true },
+      { text: 'API access',                          ok: true },
+      { text: 'Dashboard multi-usuario',             ok: true },
     ],
-    excluded: [],
   },
 ]
 
-function TrialBanner({ daysRemaining }) {
-  if (daysRemaining <= 0) return null
-  return (
-    <div className="max-w-2xl mx-auto mb-10 bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-center gap-4">
-      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-        <Clock size={18} className="text-amber-600" />
-      </div>
-      <div>
-        <p className="font-medium text-amber-900 text-sm">
-          Estás en tu período de prueba gratuita
-        </p>
-        <p className="text-amber-700 text-xs mt-0.5">
-          Te quedan <span className="font-semibold">{daysRemaining} días</span> para explorar
-          todas las funciones. Elige un plan antes de que expire para no perder el acceso.
-        </p>
-      </div>
-      <div className="ml-auto shrink-0 bg-amber-500 text-stone-900 text-xs font-semibold px-3 py-1.5 rounded-full">
-        {daysRemaining}d restantes
-      </div>
-    </div>
-  )
+function formatCOP(n) {
+  return '$' + n.toLocaleString('es-CO')
 }
 
-function PlanCard({ plan, onSelect, loading, currentPlan }) {
-  const Icon = plan.icon
-  const isCurrentPlan = currentPlan === plan.id
-  const isLoading = loading === plan.id
+// ─── PricingCard ──────────────────────────────────────────────────────────────
+function PricingCard({ plan, annual, onChoose, loading, isCurrent, inTrial }) {
+  const price    = annual ? plan.annual  : plan.monthly
+  const perMonth = annual ? Math.round(plan.annual / 12) : plan.monthly
+  const savings  = plan.monthly * 2
 
   return (
-    <div className={`bg-white rounded-2xl flex flex-col relative transition-all duration-200
+    <div className={`relative rounded-2xl border flex flex-col transition-shadow
       ${plan.popular
-        ? 'border-2 border-amber-400 shadow-lg shadow-amber-100'
-        : 'border border-stone-200 hover:border-stone-300'
-      }`}
-    >
+        ? 'border-amber-400 shadow-xl shadow-amber-100 scale-[1.02]'
+        : 'border-stone-200 shadow-sm hover:shadow-md'}`}
+      style={{ background: plan.bg }}>
+
       {plan.popular && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-          <span className="bg-amber-500 text-stone-900 text-[10px] font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
-            Más popular
+          <span className="flex items-center gap-1 bg-amber-500 text-stone-900 text-xs font-semibold px-3 py-1 rounded-full">
+            <Star size={11} className="fill-stone-900" /> Más popular
           </span>
         </div>
       )}
 
       <div className="p-6 flex-1">
-        <div className="flex items-center gap-2.5 mb-1">
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center
-            ${plan.popular ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-600'}`}>
-            <Icon size={16} />
-          </div>
-          <h3 className="font-serif text-xl font-semibold">{plan.name}</h3>
-          {isCurrentPlan && (
-            <span className="text-[10px] bg-emerald-100 text-emerald-700 font-medium px-2 py-0.5 rounded-full">
-              Plan actual
-            </span>
+        {/* Header */}
+        <div className="flex items-center gap-2 mb-1">
+          <span style={{ color: plan.color }}>{plan.icon}</span>
+          <h3 className="font-serif text-xl font-semibold" style={{ color: plan.color }}>
+            {plan.name}
+          </h3>
+        </div>
+        <p className="text-sm text-stone-500 mb-5">{plan.desc}</p>
+
+        {/* Precio */}
+        <div className="mb-1">
+          {annual ? (
+            <>
+              <div className="flex items-baseline gap-1">
+                <span className="font-serif text-3xl font-bold text-stone-900">
+                  {formatCOP(price)}
+                </span>
+                <span className="text-stone-400 text-sm">/año</span>
+              </div>
+              <p className="text-xs text-stone-500 mt-0.5">
+                {formatCOP(perMonth)}/mes ·{' '}
+                <span className="text-emerald-600 font-medium">
+                  ahorras {formatCOP(savings)}
+                </span>
+              </p>
+            </>
+          ) : (
+            <div className="flex items-baseline gap-1">
+              <span className="font-serif text-3xl font-bold text-stone-900">
+                {formatCOP(price)}
+              </span>
+              <span className="text-stone-400 text-sm">/mes</span>
+            </div>
           )}
         </div>
-        <p className="text-xs text-stone-500 mb-4">{plan.description}</p>
 
-        <div className="mb-6">
-          <div className="flex items-baseline gap-1">
-            <span className="font-serif text-3xl font-semibold">
-              ${plan.price.toLocaleString('es-CO')}
-            </span>
-            <span className="text-sm text-stone-400">COP / mes</span>
+        {annual && (
+          <div className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700
+            text-xs font-medium px-2.5 py-1 rounded-full mb-4">
+            🎁 2 meses gratis incluidos
           </div>
-          <p className="text-[11px] text-stone-400 mt-1">
-            ≈ ${Math.round(plan.price / 4200).toLocaleString('en-US')} USD · IVA incluido
-          </p>
-        </div>
+        )}
 
-        <ul className="space-y-2 mb-4">
-          {plan.features.map((f) => (
-            <li key={f} className="flex items-start gap-2 text-sm text-stone-700">
-              <CheckCircle2 size={14} className="text-emerald-500 mt-0.5 shrink-0" />
-              {f}
+        {/* Features */}
+        <ul className="space-y-2.5 mt-4">
+          {plan.features.map(({ text, ok }) => (
+            <li key={text} className="flex items-center gap-2.5 text-sm">
+              {ok
+                ? <Check size={14} className="shrink-0" style={{ color: plan.color }} />
+                : <Minus size={14} className="shrink-0 text-stone-300" />}
+              <span className={ok ? 'text-stone-700' : 'text-stone-400'}>{text}</span>
             </li>
           ))}
         </ul>
-
-        {plan.excluded.length > 0 && (
-          <ul className="space-y-2">
-            {plan.excluded.map((f) => (
-              <li key={f} className="flex items-start gap-2 text-sm text-stone-300 line-through">
-                <span className="w-3.5 mt-0.5 shrink-0">—</span>
-                {f}
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
 
-      <div className="px-6 pb-6">
-        <button
-          onClick={() => onSelect(plan.id)}
-          disabled={isCurrentPlan || !!loading}
-          className={`w-full py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2
-            ${isCurrentPlan
-              ? 'bg-stone-100 text-stone-400 cursor-default'
-              : plan.popular
-                ? 'bg-amber-500 hover:bg-amber-600 text-stone-900'
-                : 'bg-stone-900 hover:bg-stone-800 text-white'
-            } disabled:opacity-50`}
-        >
-          {isLoading ? (
-            <>
-              <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              Redirigiendo…
-            </>
-          ) : isCurrentPlan ? 'Plan actual' : `Elegir ${plan.name} →`}
-        </button>
+      {/* CTA */}
+      <div className="p-6 pt-0">
+        {isCurrent ? (
+          <div className="w-full text-center py-2.5 text-sm font-medium text-stone-400
+            border border-stone-200 rounded-xl bg-stone-50">
+            Plan actual
+          </div>
+        ) : (
+          <button
+            onClick={() => onChoose(annual ? `${plan.key}_annual` : `${plan.key}_monthly`)}
+            disabled={loading}
+            className="w-full py-2.5 text-sm font-semibold rounded-xl transition-all
+              hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
+            style={{ background: plan.color, color: '#fff' }}>
+            {loading ? 'Redirigiendo…' : `Elegir ${plan.name} →`}
+          </button>
+        )}
       </div>
     </div>
   )
 }
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function PricingPage() {
   const { isAuthenticated, subscription, user } = useAuthStore()
-  const navigate = useNavigate()
-  const [loading, setLoading] = useState(null)
-  const [error, setError] = useState(null)
+  const navigate   = useNavigate()
+  const [annual,   setAnnual]   = useState(false)
+  const [loading,  setLoading]  = useState(null)
 
-  const currentPlan = subscription?.status === 'active' ? subscription.plan_type : null
+  const authed   = isAuthenticated()
+  const inTrial  = user?.trial_ends_at && new Date(user.trial_ends_at) > new Date()
+  const hasSub   = subscription?.status === 'active'
+  const currPlan = subscription?.plan_type
 
-  // Calcular días restantes de trial
-  const trialDaysRemaining = React.useMemo(() => {
-    if (!user?.trial_ends_at) return 0
-    const delta = new Date(user.trial_ends_at) - new Date()
-    return Math.max(0, Math.ceil(delta / (1000 * 60 * 60 * 24)))
-  }, [user])
-
-  const handleSelect = async (planId) => {
-    if (!isAuthenticated()) {
-      navigate('/register', { state: { from: { pathname: '/pricing' } } })
-      return
-    }
-    setError(null)
-    setLoading(planId)
+  const handleChoose = async (planKey) => {
+    if (!authed) { navigate('/register'); return }
+    setLoading(planKey)
     try {
-      const { data } = await subscriptionAPI.createCheckout(planId)
+      const { data } = await subscriptionAPI.createCheckout(planKey)
       window.location.href = data.checkout_url
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Error al procesar el pago. Intenta de nuevo.')
+    } catch {
       setLoading(null)
     }
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-12 animate-fade-up">
-      <div className="text-center mb-10">
-        <p className="text-xs font-medium uppercase tracking-widest text-amber-600 mb-3">Planes y precios</p>
-        <h1 className="font-serif text-4xl font-semibold text-stone-900 mb-3">
-          Publica tus propiedades
-        </h1>
-        <p className="text-stone-500 max-w-md mx-auto text-sm leading-relaxed">
-          30 días de prueba gratuita al registrarte. Sin tarjeta de crédito. Cancela cuando quieras.
-        </p>
-      </div>
+    <div className="min-h-screen bg-stone-50 py-16 px-4">
+      <div className="max-w-5xl mx-auto">
 
-      {/* Banner trial */}
-      {isAuthenticated() && <TrialBanner daysRemaining={trialDaysRemaining} />}
-
-      {error && (
-        <div className="max-w-lg mx-auto mb-8 flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-3 rounded-xl">
-          <AlertCircle size={15} className="shrink-0" />{error}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-        {PLANS.map((plan) => (
-          <PlanCard
-            key={plan.id}
-            plan={plan}
-            onSelect={handleSelect}
-            loading={loading}
-            currentPlan={currentPlan}
-          />
-        ))}
-      </div>
-
-      {/* Trial CTA para no autenticados */}
-      {!isAuthenticated() && (
-        <div className="mt-10 text-center bg-stone-50 border border-stone-200 rounded-2xl p-8">
-          <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <Clock size={22} className="text-amber-600" />
-          </div>
-          <h3 className="font-serif text-xl font-medium mb-2">Empieza gratis hoy</h3>
-          <p className="text-stone-500 text-sm mb-4 max-w-sm mx-auto">
-            Regístrate y obtén 30 días de acceso completo sin necesidad de tarjeta de crédito.
+        {/* Header */}
+        <div className="text-center mb-10">
+          <p className="text-xs font-medium uppercase tracking-widest text-amber-600 mb-2">
+            Planes y precios
           </p>
-          <button
-            onClick={() => navigate('/register')}
-            className="bg-stone-900 text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-stone-800 transition-colors"
-          >
-            Comenzar prueba gratuita →
-          </button>
+          <h1 className="font-serif text-4xl font-semibold text-stone-900 mb-3">
+            Publica tus propiedades
+          </h1>
+          <p className="text-stone-500 text-sm max-w-md mx-auto">
+            30 días de prueba gratuita al registrarte. Sin tarjeta de crédito.
+          </p>
         </div>
-      )}
 
-      <div className="mt-12 text-center">
-        <p className="text-xs text-stone-400 mb-1">🔒 Pagos seguros procesados por Stripe</p>
-        <p className="text-xs text-stone-400">
-          Todos los planes incluyen 7 días de garantía de devolución.{' '}
-          <a href="mailto:johnroa@velezyricaurte.com" className="text-amber-600 hover:underline font-medium">
-            johnroa@velezyricaurte.com
-          </a>
-        </p>
-      </div>
+        {/* Toggle mensual / anual */}
+        <div className="flex items-center justify-center gap-3 mb-10">
+          <span className={`text-sm font-medium ${!annual ? 'text-stone-900' : 'text-stone-400'}`}>
+            Mensual
+          </span>
+          <button
+            onClick={() => setAnnual(a => !a)}
+            className={`relative w-12 h-6 rounded-full transition-colors duration-200
+              ${annual ? 'bg-emerald-500' : 'bg-stone-300'}`}>
+            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow
+              transition-transform duration-200
+              ${annual ? 'translate-x-6' : 'translate-x-0.5'}`} />
+          </button>
+          <span className={`text-sm font-medium ${annual ? 'text-stone-900' : 'text-stone-400'}`}>
+            Anual
+          </span>
+          {annual && (
+            <span className="bg-emerald-100 text-emerald-700 text-xs font-semibold
+              px-2.5 py-1 rounded-full">
+              2 meses gratis 🎁
+            </span>
+          )}
+        </div>
 
-      <div className="mt-14 max-w-2xl mx-auto">
-        <h2 className="font-serif text-2xl font-medium text-center mb-6">Preguntas frecuentes</h2>
-        {[
-          { q: '¿Necesito tarjeta de crédito para el trial?', a: 'No. Los 30 días de prueba son completamente gratuitos y no requieren ningún método de pago.' },
-          { q: '¿Qué pasa cuando termina el trial?', a: 'Tus propiedades se pausan automáticamente. Al activar un plan se reactivan sin perder ningún dato.' },
-          { q: '¿Puedo cambiar de plan en cualquier momento?', a: 'Sí. Puedes actualizar o degradar desde el dashboard. Los cambios aplican en el próximo ciclo.' },
-          { q: '¿Qué métodos de pago aceptan?', a: 'Tarjetas de crédito y débito vía Stripe. Próximamente PSE para Colombia.' },
-        ].map(({ q, a }) => (
-          <details key={q} className="border-b border-stone-200 py-4 group">
-            <summary className="text-sm font-medium text-stone-800 cursor-pointer flex justify-between items-center list-none">
-              {q}
-              <span className="text-stone-400 group-open:rotate-180 transition-transform text-lg leading-none">↓</span>
-            </summary>
-            <p className="text-sm text-stone-500 mt-2 leading-relaxed">{a}</p>
-          </details>
-        ))}
+        {/* Trial banner */}
+        {inTrial && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-3.5
+            flex items-center gap-3 mb-8 max-w-lg mx-auto text-center justify-center">
+            <Crown size={16} className="text-amber-600 shrink-0" />
+            <p className="text-sm text-amber-800">
+              <strong>Período de prueba activo</strong> —{' '}
+              {Math.max(0, Math.ceil(
+                (new Date(user.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24)
+              ))} días para explorar todas las funciones.
+            </p>
+          </div>
+        )}
+
+        {/* Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+          {PLANS.map(plan => (
+            <PricingCard
+              key={plan.key}
+              plan={plan}
+              annual={annual}
+              onChoose={handleChoose}
+              loading={loading === (annual ? `${plan.key}_annual` : `${plan.key}_monthly`)}
+              isCurrent={hasSub && currPlan === plan.key}
+              inTrial={inTrial}
+            />
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="text-center mt-12 space-y-3">
+          <p className="text-xs text-stone-400 flex items-center justify-center gap-2">
+            🔒 Pagos seguros · Wompi · PSE · Tarjetas · Nequi · Bancolombia
+          </p>
+          <p className="text-xs text-stone-400">
+            Todos los planes incluyen 7 días de garantía de devolución.
+          </p>
+          {!authed && (
+            <div className="mt-6">
+              <p className="text-sm text-stone-500 mb-3">¿Todavía no tienes cuenta?</p>
+              <Link to="/register"
+                className="inline-block bg-stone-900 text-white text-sm font-semibold
+                  px-6 py-3 rounded-xl hover:bg-stone-800 transition-colors">
+                Comenzar prueba gratuita de 30 días →
+              </Link>
+            </div>
+          )}
+          <p className="text-xs text-stone-400 pt-2">
+            ¿Preguntas?{' '}
+            <a href="mailto:johnroa@velezyricaurte.com"
+              className="text-amber-600 hover:underline font-medium">
+              johnroa@velezyricaurte.com
+            </a>
+          </p>
+        </div>
+
       </div>
     </div>
   )
