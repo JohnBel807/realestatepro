@@ -3,7 +3,7 @@ RealEstate Pro — FastAPI Backend
 main.py: Entry point, routes, middleware, auth
 """
 
-from fastapi import FastAPI, Depends, HTTPException, status, Query
+from fastapi import FastAPI, Depends, HTTPException, status, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -237,6 +237,289 @@ def trial_status(current_user: models.User = Depends(get_current_user)):
         "trial_days_remaining": crud.trial_days_remaining(current_user),
         "trial_ends_at": current_user.trial_ends_at,
     }
+
+
+# ─── Recuperar contraseña ────────────────────────────────────────────────────
+import secrets as secrets_module
+
+@app.post("/auth/forgot-password", tags=["Auth"])
+async def forgot_password(body: dict, db: Session = Depends(get_db)):
+    email = (body.get("email") or "").strip().lower()
+    if not email:
+        raise HTTPException(400, "Email requerido")
+
+    user = crud.get_user_by_email(db, email=email)
+    # Siempre 200 aunque no exista — seguridad
+    if not user:
+        return {"message": "Si el correo existe, recibirás un enlace en breve."}
+
+    token = secrets_module.token_urlsafe(32)
+    user.password_reset_token   = token
+    user.password_reset_expires = datetime.utcnow() + timedelta(hours=2)
+    db.commit()
+
+    frontend_url = os.getenv("FRONTEND_URL", "https://www.velezyricaurte.com")
+    reset_link   = f"{frontend_url}/reset-password?token={token}"
+
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;">
+      <h2 style="color:#6B4E2A;font-family:Georgia,serif;">VelezyRicaurte Inmobiliaria</h2>
+      <p>Hola <strong>{user.full_name}</strong>,</p>
+      <p>Recibimos una solicitud para restablecer tu contraseña.</p>
+      <p style="margin:24px 0;">
+        <a href="{reset_link}"
+           style="background:#C4631A;color:#fff;padding:12px 24px;border-radius:8px;
+                  text-decoration:none;font-weight:bold;display:inline-block;">
+          Restablecer contraseña →
+        </a>
+      </p>
+      <p style="color:#888;font-size:13px;">
+        Este enlace expira en 2 horas. Si no solicitaste este cambio, ignora este correo.
+      </p>
+      <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
+      <p style="color:#aaa;font-size:11px;">VelezyRicaurte Inmobiliaria · johnroa@velezyricaurte.com</p>
+    </div>
+    """
+    try:
+        from email_service import _send
+        _send(email, "Restablecer contraseña — VelezyRicaurte Inmobiliaria", html)
+    except Exception as e:
+        logger.error(f"Error enviando correo reset: {e}")
+
+    return {"message": "Si el correo existe, recibirás un enlace en breve."}
+
+
+@app.post("/auth/reset-password", tags=["Auth"])
+def reset_password(body: dict, db: Session = Depends(get_db)):
+    token    = (body.get("token") or "").strip()
+    password = (body.get("password") or "").strip()
+
+    if not token or not password:
+        raise HTTPException(400, "Token y contraseña son requeridos")
+    if len(password) < 8:
+        raise HTTPException(400, "Mínimo 8 caracteres")
+
+    user = db.query(models.User).filter(
+        models.User.password_reset_token == token
+    ).first()
+
+    if not user:
+        raise HTTPException(400, "Token inválido o ya utilizado")
+    if user.password_reset_expires < datetime.utcnow():
+        raise HTTPException(400, "El enlace expiró. Solicita uno nuevo.")
+
+    user.hashed_password        = get_password_hash(password)
+    user.password_reset_token   = None
+    user.password_reset_expires = None
+    db.commit()
+
+    return {"message": "¡Contraseña actualizada! Ya puedes iniciar sesión."}
+
+
+# ─── Admin / Superusuario ─────────────────────────────────────────────────────
+def get_superuser(current_user: models.User = Depends(get_current_user)):
+    if not current_user.is_superuser:
+        raise HTTPException(403, "Acción reservada para administradores")
+    return current_user
+
+
+@app.get("/admin/users", tags=["Admin"])
+def admin_list_users(
+    skip: int = 0, limit: int = 50,
+    db: Session = Depends(get_db),
+    _: models.User = Depends(get_superuser),
+):
+    users = db.query(models.User).offset(skip).limit(limit).all()
+    return [
+        {
+            "id":            u.id,
+            "email":         u.email,
+            "full_name":     u.full_name,
+            "is_active":     u.is_active,
+            "is_superuser":  u.is_superuser,
+            "trial_ends_at": u.trial_ends_at,
+            "created_at":    u.created_at,
+        }
+        for u in users
+    ]
+
+
+@app.delete("/admin/properties/{property_id}", tags=["Admin"])
+def admin_delete_property(
+    property_id: int,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_superuser),
+):
+    prop = db.query(models.Property).filter(
+        models.Property.id == property_id
+    ).first()
+    if not prop:
+        raise HTTPException(404, "Propiedad no encontrada")
+    db.delete(prop)
+    db.commit()
+    logger.info(f"Admin {admin.email} eliminó propiedad #{property_id}")
+    return {"deleted": True, "property_id": property_id}
+
+
+@app.put("/admin/users/{user_id}/toggle-active", tags=["Admin"])
+def admin_toggle_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    admin: models.User = Depends(get_superuser),
+):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(404, "Usuario no encontrado")
+    if user.is_superuser:
+        raise HTTPException(403, "No puedes desactivar otro superusuario")
+    user.is_active = not user.is_active
+    db.commit()
+    return {"user_id": user_id, "is_active": user.is_active}
+
+
+# ─── Properties Routes ────────────────────────────────────────────────────────
+@app.get("/properties", response_model=schemas.PropertyList, tags=["Properties"])
+def list_properties(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+    min_m2: Optional[float] = None,
+    max_m2: Optional[float] = None,
+    bedrooms: Optional[int] = None,
+    city: Optional[str] = None,
+    property_type: Optional[str] = None,
+    listing_type: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """Listado público con filtros avanzados. No requiere autenticación."""
+    filters = schemas.PropertyFilters(
+        min_price=min_price, max_price=max_price,
+        min_m2=min_m2, max_m2=max_m2,
+        bedrooms=bedrooms, city=city,
+        property_type=property_type,
+        listing_type=listing_type,
+    )
+    properties, total = crud.get_properties(db, skip=skip, limit=limit, filters=filters)
+    return {"items": properties, "total": total, "skip": skip, "limit": limit}
+
+
+@app.get("/properties/{property_id}", response_model=schemas.PropertyOut, tags=["Properties"])
+def get_property(property_id: int, db: Session = Depends(get_db)):
+    prop = crud.get_property(db, property_id=property_id)
+    if not prop:
+        raise HTTPException(status_code=404, detail="Propiedad no encontrada")
+    return prop
+
+
+@app.post("/properties", response_model=schemas.PropertyOut, status_code=201, tags=["Properties"])
+def create_property(
+    property_in: schemas.PropertyCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_active_subscription)   # ← middleware suscripción
+):
+    """Crear propiedad. Requiere JWT + suscripción activa."""
+    return crud.create_property(db, property_in=property_in, owner_id=current_user.id)
+
+
+@app.put("/properties/{property_id}", response_model=schemas.PropertyOut, tags=["Properties"])
+def update_property(
+    property_id: int,
+    property_in: schemas.PropertyUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Editar propiedad. Solo el dueño puede modificarla."""
+    prop = crud.get_property(db, property_id=property_id)
+    if not prop:
+        raise HTTPException(status_code=404, detail="Propiedad no encontrada")
+    if prop.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="No tienes permiso para editar esta propiedad")
+    return crud.update_property(db, prop=prop, property_in=property_in)
+
+
+@app.delete("/properties/{property_id}", status_code=204, tags=["Properties"])
+def delete_property(
+    property_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    prop = crud.get_property(db, property_id=property_id)
+    if not prop:
+        raise HTTPException(status_code=404, detail="Propiedad no encontrada")
+    if prop.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="No tienes permiso")
+    crud.delete_property(db, prop=prop)
+
+
+# ─── Stripe / Subscription Routes ─────────────────────────────────────────────
+@app.post("/create-checkout-session", tags=["Subscriptions"])
+async def create_checkout_session(
+    plan: schemas.PlanRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Crea un enlace de pago en Wompi (Colombia)."""
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    redirect_url = f"{frontend_url}/dashboard?subscription=success"
+
+    result = await create_payment_link(
+        plan_type=plan.plan_type,
+        user_id=current_user.id,
+        user_email=current_user.email,
+        redirect_url=redirect_url,
+    )
+    return {"checkout_url": result["payment_url"], "link_id": result["link_id"]}
+
+
+@app.post("/webhooks/wompi", tags=["Subscriptions"])
+@app.post("/api/subscriptions/wompi-webhook", tags=["Subscriptions"])
+async def wompi_webhook(request: Request, db: Session = Depends(get_db)):
+    """
+    Endpoint de webhook unificado para Wompi.
+    Recibe eventos directos de Wompi Y reenvíos desde velezyricaurte.info.
+    El backend de .info detecta referencias COM_ y las reenvía aquí.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(400, "Payload inválido")
+
+    # Verificar firma (no bloqueamos si no está configurada)
+    signature = request.headers.get("x-event-checksum", "")
+    if not verify_wompi_signature(body, signature):
+        logger.warning("Wompi webhook: firma inválida — ignorando")
+        return {"received": True}
+
+    event = parse_wompi_event(body)
+    logger.info(
+        f"Wompi webhook: event={event['event_type']} "
+        f"status={event['status']} ref={event['reference']}"
+    )
+
+    if event["approved"] and event["user_id"] and event["plan_type"]:
+        try:
+            user_id = int(event["user_id"])
+            plan    = event["plan_type"]
+
+            # Normalizar plan — quitar sufijo _monthly/_annual para el modelo
+            base_plan = plan.replace("_monthly", "").replace("_annual", "")
+
+            crud.upsert_subscription(
+                db,
+                user_id=user_id,
+                plan_type=base_plan,
+                stripe_customer_id=f"wompi_{event['transaction_id']}",
+                stripe_subscription_id=f"wompi_{event['transaction_id']}_{plan}",
+            )
+            logger.info(
+                f"✅ Suscripción activada: user={user_id} "
+                f"plan={base_plan} ref={event['reference']}"
+            )
+        except Exception as e:
+            logger.error(f"Error activando suscripción: {e}")
+
+    return {"received": True}
 
 
 # ─── Recuperar contraseña ────────────────────────────────────────────────────
