@@ -101,7 +101,7 @@ async def create_payment_link(
     payload = {
         "name":             PLAN_NAMES.get(plan_type, plan_type),
         "description":      f"Suscripción {plan_type} — VelezyRicaurte Inmobiliaria",
-        "single_use":       True,
+        "single_use":       False,   # False permite reintentos si falla la carga
         "collect_shipping": False,
         "currency":         "COP",
         "amount_in_cents":  amount_in_cents,
@@ -127,7 +127,12 @@ async def create_payment_link(
     if integrity:
         checkout_url += f"&signature:integrity={integrity}"
 
-    logger.info(f"Wompi link creado: {link_id} plan={plan_type} ref={reference}")
+    logger.info(
+        f"Wompi link creado OK: id={link_id} plan={plan_type} "
+        f"ref={reference} amount={amount_in_cents} "
+        f"integrity={'si' if integrity else 'no'} "
+        f"url={checkout_url[:80]}"
+    )
 
     return {
         "payment_url": checkout_url,
