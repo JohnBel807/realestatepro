@@ -255,7 +255,8 @@ async def forgot_password(body: dict, db: Session = Depends(get_db)):
 
     token = secrets_module.token_urlsafe(32)
     user.password_reset_token   = token
-    user.password_reset_expires = datetime.utcnow() + timedelta(hours=2)
+    from datetime import timezone
+    user.password_reset_expires = datetime.now(timezone.utc) + timedelta(hours=2)
     db.commit()
 
     frontend_url = os.getenv("FRONTEND_URL", "https://www.velezyricaurte.com")
@@ -305,7 +306,13 @@ def reset_password(body: dict, db: Session = Depends(get_db)):
 
     if not user:
         raise HTTPException(400, "Token inválido o ya utilizado")
-    if user.password_reset_expires < datetime.utcnow():
+    # Comparar fechas con timezone consistente
+    from datetime import timezone
+    expires = user.password_reset_expires
+    now     = datetime.now(timezone.utc)
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if expires < now:
         raise HTTPException(400, "El enlace expiró. Solicita uno nuevo.")
 
     user.hashed_password        = get_password_hash(password)
@@ -556,7 +563,8 @@ async def forgot_password(body: dict, db: Session = Depends(get_db)):
 
     token = secrets_module.token_urlsafe(32)
     user.password_reset_token   = token
-    user.password_reset_expires = datetime.utcnow() + timedelta(hours=2)
+    from datetime import timezone
+    user.password_reset_expires = datetime.now(timezone.utc) + timedelta(hours=2)
     db.commit()
 
     frontend_url = os.getenv("FRONTEND_URL", "https://www.velezyricaurte.com")
@@ -606,7 +614,13 @@ def reset_password(body: dict, db: Session = Depends(get_db)):
 
     if not user:
         raise HTTPException(400, "Token inválido o ya utilizado")
-    if user.password_reset_expires < datetime.utcnow():
+    # Comparar fechas con timezone consistente
+    from datetime import timezone
+    expires = user.password_reset_expires
+    now     = datetime.now(timezone.utc)
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if expires < now:
         raise HTTPException(400, "El enlace expiró. Solicita uno nuevo.")
 
     user.hashed_password        = get_password_hash(password)
@@ -824,15 +838,29 @@ def my_properties(
     return crud.get_properties_by_owner(db, owner_id=current_user.id)
 
 
-@app.get("/dashboard/subscription", response_model=schemas.SubscriptionOut, tags=["Dashboard"])
+@app.get("/dashboard/subscription", tags=["Dashboard"])
 def my_subscription(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
+    """Retorna la suscripción activa o null si no tiene — nunca 404."""
     sub = crud.get_active_subscription(db, user_id=current_user.id)
     if not sub:
-        raise HTTPException(status_code=404, detail="Sin suscripción activa")
-    return sub
+        return {
+            "status": "none",
+            "plan_type": None,
+            "trial_active": crud.is_trial_active(current_user),
+            "trial_days_remaining": crud.trial_days_remaining(current_user),
+            "trial_ends_at": current_user.trial_ends_at,
+        }
+    return {
+        "status":               sub.status,
+        "plan_type":            sub.plan_type,
+        "current_period_end":   sub.current_period_end,
+        "trial_active":         False,
+        "trial_days_remaining": 0,
+        "trial_ends_at":        current_user.trial_ends_at,
+    }
 
 
 # ─── Upload Routes ────────────────────────────────────────────────────────────
