@@ -459,9 +459,12 @@ async def create_checkout_session(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    """Crea un enlace de pago en Wompi (Colombia)."""
+    """Crea sesión de pago Wompi — devuelve URL, referencia e integridad."""
+    import hashlib
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
-    redirect_url = f"{frontend_url}/dashboard?subscription=success"
+    redirect_url = (
+        f"{frontend_url}/dashboard?subscription=success&plan={plan.plan_type}"
+    )
 
     result = await create_payment_link(
         plan_type=plan.plan_type,
@@ -469,7 +472,22 @@ async def create_checkout_session(
         user_email=current_user.email,
         redirect_url=redirect_url,
     )
-    return {"checkout_url": result["payment_url"], "link_id": result["link_id"]}
+
+    # Calcular firma de integridad para el widget del frontend
+    integrity_secret = os.getenv("WOMPI_INTEGRITY_SECRET", "")
+    integrity = ""
+    if integrity_secret:
+        raw = f"{result['reference']}{result['amount']}COP{integrity_secret}"
+        integrity = hashlib.sha256(raw.encode()).hexdigest()
+
+    return {
+        "checkout_url": result["payment_url"],
+        "link_id":      result["link_id"],
+        "reference":    result["reference"],
+        "amount":       result["amount"],
+        "integrity":    integrity,
+        "redirect_url": redirect_url,
+    }
 
 
 @app.post("/webhooks/wompi", tags=["Subscriptions"])

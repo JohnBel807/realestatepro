@@ -1,7 +1,8 @@
 // src/pages/PricingPage.jsx — Planes mensual / anual con 2 meses gratis
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Check, Minus, Crown, Zap, Building2, Star } from 'lucide-react'
+import { Check, Minus, Crown, Zap, Building2, Star, X } from 'lucide-react'
+import WompiCheckout from '../components/WompiCheckout'
 import { useAuthStore } from '../store/useStore'
 import { subscriptionAPI } from '../lib/api'
 
@@ -170,6 +171,42 @@ function PricingCard({ plan, annual, onChoose, loading, isCurrent, inTrial }) {
           </button>
         )}
       </div>
+
+      {/* Modal de pago Wompi */}
+      {checkoutData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+          onClick={e => { if (e.target === e.currentTarget) setCheckoutData(null) }}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-serif text-lg font-semibold text-stone-900">
+                Confirmar pago
+              </h3>
+              <button onClick={() => setCheckoutData(null)}
+                className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-100">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="bg-stone-50 rounded-xl p-4 mb-4 text-sm text-stone-600 space-y-1">
+              <p><span className="font-medium text-stone-800">Plan:</span> {checkoutData.link_id}</p>
+              <p><span className="font-medium text-stone-800">Monto:</span>{' '}
+                ${(checkoutData.amount / 100).toLocaleString('es-CO')} COP
+              </p>
+              <p><span className="font-medium text-stone-800">Ref:</span>{' '}
+                <span className="font-mono text-xs">{checkoutData.reference}</span>
+              </p>
+            </div>
+            <WompiCheckout
+              amount={checkoutData.amount}
+              reference={checkoutData.reference}
+              integrity={checkoutData.integrity}
+              redirectUrl={checkoutData.redirect_url}
+            />
+            <p className="text-xs text-center text-stone-400 mt-3">
+              🔒 Pago seguro procesado por Wompi · PSE · Tarjetas · Nequi
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -186,12 +223,21 @@ export default function PricingPage() {
   const hasSub   = subscription?.status === 'active'
   const currPlan = subscription?.plan_type
 
+  const [checkoutData, setCheckoutData] = useState(null)
+
   const handleChoose = async (planKey) => {
     if (!authed) { navigate('/register'); return }
     setLoading(planKey)
     try {
       const { data } = await subscriptionAPI.createCheckout(planKey)
-      window.location.href = data.checkout_url
+      if (data.integrity && data.reference) {
+        // Usar widget con integridad
+        setCheckoutData(data)
+        setLoading(null)
+      } else {
+        // Fallback: redirigir al link
+        window.location.href = data.checkout_url
+      }
     } catch {
       setLoading(null)
     }
@@ -295,6 +341,42 @@ export default function PricingPage() {
         </div>
 
       </div>
+
+      {/* Modal de pago Wompi */}
+      {checkoutData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+          onClick={e => { if (e.target === e.currentTarget) setCheckoutData(null) }}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-serif text-lg font-semibold text-stone-900">
+                Confirmar pago
+              </h3>
+              <button onClick={() => setCheckoutData(null)}
+                className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-100">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="bg-stone-50 rounded-xl p-4 mb-4 text-sm text-stone-600 space-y-1">
+              <p><span className="font-medium text-stone-800">Plan:</span> {checkoutData.link_id}</p>
+              <p><span className="font-medium text-stone-800">Monto:</span>{' '}
+                ${(checkoutData.amount / 100).toLocaleString('es-CO')} COP
+              </p>
+              <p><span className="font-medium text-stone-800">Ref:</span>{' '}
+                <span className="font-mono text-xs">{checkoutData.reference}</span>
+              </p>
+            </div>
+            <WompiCheckout
+              amount={checkoutData.amount}
+              reference={checkoutData.reference}
+              integrity={checkoutData.integrity}
+              redirectUrl={checkoutData.redirect_url}
+            />
+            <p className="text-xs text-center text-stone-400 mt-3">
+              🔒 Pago seguro procesado por Wompi · PSE · Tarjetas · Nequi
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
