@@ -10,6 +10,7 @@ i18n
   .use(initReactI18next)
   .init({
     fallbackLng: 'es',
+    lng: 'es',                    // Español por defecto — crítico para SEO
     supportedLngs: ['es', 'en'],
     defaultNS: 'translation',
     backend: {
@@ -18,6 +19,8 @@ i18n
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
+      // Solo cambiar a inglés si el usuario lo eligió explícitamente
+      lookupLocalStorage: 'i18nextLng',
     },
     interpolation: {
       escapeValue: false,
