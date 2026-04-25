@@ -9,6 +9,7 @@ import {
   CheckCircle2, Phone, MessageCircle, AlertCircle,
 } from 'lucide-react'
 import { propertiesAPI } from '../lib/api'
+import { TraeNosBotonPropiedad } from '../components/TraeNos'
 import { formatPrice, formatRelativeDate, cloudinaryDetail } from '../lib/formatters'
 
 // Skeleton para la página de detalle
@@ -356,6 +357,9 @@ export default function PropertyDetailPage() {
                     <Phone size={15} /> Llamar
                   </a>
                 )}
+                {/* TraeNos envío */}
+                <TraeNosBotonPropiedad />
+
                 {/* Correo directo al portal */}
                 <a
                   href={`mailto:johnroa@velezyricaurte.com?subject=Consulta sobre: ${encodeURIComponent(title)}&body=Hola, estoy interesado en la propiedad "${title}" publicada en VelezyRicaurte Inmobiliaria. Por favor contáctenme.`}

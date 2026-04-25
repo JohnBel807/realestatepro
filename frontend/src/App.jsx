@@ -10,6 +10,7 @@ import Navbar from './components/Navbar'
 import ProtectedRoute from './components/ProtectedRoute'
 import WhatsAppButton from './components/WhatsAppButton'
 import MarketplaceSidebar from './components/MarketplaceSidebar'
+import { TraeNosWidget } from './components/TraeNos'
 
 import HomePage from './pages/HomePage'
 import PropertyDetailPage from './pages/PropertyDetailPage'
@@ -84,6 +85,8 @@ function AppInner() {
       <WhatsAppButton />
       {/* Sidebar Marketplace */}
       <MarketplaceSidebar />
+      {/* Widget TraeNos */}
+      <TraeNosWidget />
     </BrowserRouter>
   )
 }
