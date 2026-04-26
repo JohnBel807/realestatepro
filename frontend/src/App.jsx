@@ -18,7 +18,8 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import PricingPage from './pages/PricingPage'
-import LegalPage from './pages/LegalPage'
+import LegalPage   from './pages/LegalPage'
+import JuegoPage   from './pages/JuegoPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage  from './pages/ResetPasswordPage'
 
@@ -74,6 +75,7 @@ function AppInner() {
                 <Route path="/dashboard" element={<DashboardPage />} />
               </Route>
               <Route path="/legal/:slug"       element={<LegalPage />} />
+              <Route path="/juego"             element={<JuegoPage />} />
               <Route path="/forgot-password"      element={<ForgotPasswordPage />} />
               <Route path="/reset-password"       element={<ResetPasswordPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
