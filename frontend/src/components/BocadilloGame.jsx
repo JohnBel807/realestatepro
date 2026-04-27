@@ -23,6 +23,55 @@ const VERDE   = 0x2D6B2A
 const GOLD    = 0xD4A017
 const RED     = 0xE24B4A
 
+// ─── Audio engine — Web Audio API (sin archivos externos) ────────────────────
+const AudioFX = (() => {
+  let ctx = null
+  const get = () => {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)()
+    return ctx
+  }
+  const play = (freq, type, duration, vol = 0.18, decay = true) => {
+    try {
+      const c = get()
+      const o = c.createOscillator()
+      const g = c.createGain()
+      o.connect(g); g.connect(c.destination)
+      o.type = type; o.frequency.setValueAtTime(freq, c.currentTime)
+      g.gain.setValueAtTime(vol, c.currentTime)
+      if (decay) g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + duration)
+      o.start(c.currentTime); o.stop(c.currentTime + duration)
+    } catch {}
+  }
+  const noise = (duration = 0.08, vol = 0.12) => {
+    try {
+      const c = get()
+      const buf = c.createBuffer(1, c.sampleRate * duration, c.sampleRate)
+      const d = buf.getChannelData(0)
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1
+      const src = c.createBufferSource()
+      const g = c.createGain()
+      src.buffer = buf; src.connect(g); g.connect(c.destination)
+      g.gain.setValueAtTime(vol, c.currentTime)
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + duration)
+      src.start()
+    } catch {}
+  }
+  return {
+    golpe:     () => { noise(.07, .15); play(120, 'sine', .1, .08) },
+    transicion:() => { [523, 659, 784].forEach((f, i) => setTimeout(() => play(f, 'sine', .18, .12), i * 80)) },
+    completar: () => { [392, 523, 659, 784].forEach((f, i) => setTimeout(() => play(f, 'triangle', .25, .15), i * 90)) },
+    entregar:  () => { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => play(f, 'sine', .2, .13), i * 70)) },
+    error:     () => { play(220, 'sawtooth', .3, .1) },
+    victoria:  () => {
+      const notes = [523, 659, 784, 659, 784, 1046]
+      notes.forEach((f, i) => setTimeout(() => play(f, 'triangle', .3, .16), i * 120))
+    },
+    paila_ok:  () => play(880, 'sine', .12, .1),
+    paila_hot: () => play(180, 'sawtooth', .15, .1),
+    pack_catch:() => play(660, 'triangle', .1, .12),
+  }
+})()
+
 // ─── Helpers gráficos (usados en todas las escenas) ───────────────────────────
 function drawGuayaba(g, x, y, r = 70, col = 0xE8613C) {
   g.clear()
@@ -133,10 +182,10 @@ function makeTrituraScene() {
     init(data) { this.gameData = data || { money: 15000, day: 1, rep: 1, stock: 0, fulfilled: 0 } }
 
     preload() {
-      const base = window.location.origin
-      this.load.image('guayaba',  base + '/guayaba.png')
-      this.load.image('guayapul', base + '/guaya-pul.png')
-      this.load.image('pulpa',    base + '/pulpa.png')
+      // Imágenes en base64 — sin CORS, sin 404, funcionan en cualquier entorno
+      this.textures.addBase64('guayaba',  IMG_GUAYABA)
+      this.textures.addBase64('guayapul', IMG_GUAYAPUL)
+      this.textures.addBase64('pulpa',    IMG_PULPA)
     }
 
     create() {
@@ -214,6 +263,7 @@ function makeTrituraScene() {
       this.tweens.add({ targets: this.barFill, width: 320 * pct, duration: 90, ease: 'Power2' })
       this.progTxt.setText(this.clicks + ' / ' + this.needed + ' golpes')
       this.jugoParticles.emitParticleAt(W/2, H/2 - 30, 8)
+      AudioFX.golpe()
 
       // Shake
       const imgs = [this.imgGuayaba, this.imgTroceada, this.imgPulpa, this.cracksG, this.borderG]
@@ -240,6 +290,7 @@ function makeTrituraScene() {
       if (pct >= 0.40 && this.fase === 0) {
         this.fase = 1
         this.cracksG.clear()
+        AudioFX.transicion()
         this.estadoTxt.setText('Troceando...')
         this.tweens.add({ targets: this.imgGuayaba,  alpha: 0, duration: 400, ease: 'Power2' })
         this.tweens.add({ targets: this.imgTroceada, alpha: 1, duration: 400, ease: 'Power2' })
@@ -249,6 +300,7 @@ function makeTrituraScene() {
       }
       if (pct >= 0.75 && this.fase === 1) {
         this.fase = 2
+        AudioFX.transicion()
         this.estadoTxt.setText('Pulpa lista')
         this.tweens.add({ targets: this.imgTroceada, alpha: 0, duration: 400, ease: 'Power2' })
         this.tweens.add({ targets: this.imgPulpa,    alpha: 1, duration: 400, ease: 'Power2' })
@@ -262,6 +314,7 @@ function makeTrituraScene() {
 
     completar() {
       this.input.enabled = false
+      AudioFX.completar()
       const flash = this.add.rectangle(W/2, H/2, W, H, VERDE, 0)
       this.add.text(W/2, H/2 + 100, '¡Pulpa lista para la paila!', {
         fontSize: '16px', color: '#fff', fontFamily: 'Georgia,serif'
@@ -495,6 +548,7 @@ function makeEmpaqueScene() {
     catchBocadillo(slot) {
       if (slot.caught) return
       slot.caught = true
+      AudioFX.pack_catch()
       const pct = (this.time.now - slot.born) / slot.life * 100
       let pts, col, msg
       if (pct < 38)      { pts = 3; col = VERDE;   msg = 'Perfecto +3' }
@@ -610,6 +664,7 @@ function makeMercadoScene(portalOrigin, serverUrl) {
       })
     }
     entregar(order, idx) {
+      AudioFX.entregar()
       this.stock -= order.qty
       this.money += order.qty * order.price
       this.fulfilled++
@@ -639,6 +694,7 @@ function makeMercadoScene(portalOrigin, serverUrl) {
       this.scene.start('Tritura', { money: this.money, day: this.day, rep: this.rep, stock: this.stock, fulfilled: this.fulfilled })
     }
     mostrarVictoria() {
+      AudioFX.victoria()
       this.add.rectangle(W / 2, H / 2, W, H, 0x000000, .7)
       this.add.text(W / 2, H / 2 - 60, '🏆', { fontSize: '48px' }).setOrigin(.5)
       this.add.text(W / 2, H / 2, '¡Maestro Bocadillero!', { fontSize: '22px', color: '#F5EFE6', fontFamily: 'Georgia,serif' }).setOrigin(.5)

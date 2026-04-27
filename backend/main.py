@@ -323,6 +323,31 @@ def reset_password(body: dict, db: Session = Depends(get_db)):
     return {"message": "¡Contraseña actualizada! Ya puedes iniciar sesión."}
 
 
+# ─── Game Score ──────────────────────────────────────────────────────────────
+@app.post("/game/score", tags=["Game"])
+async def save_game_score(
+    body: dict,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Guarda el score del juego Maestro Bocadillero."""
+    logger.info(
+        f"Score juego: user={current_user.email} "
+        f"portal={body.get('portal')} score={body.get('score')} "
+        f"days={body.get('days')} money={body.get('money')}"
+    )
+    return {
+        "saved":  True,
+        "player": current_user.full_name or current_user.email,
+        "score":  body.get("score", 0),
+    }
+
+@app.get("/game/scores", tags=["Game"])
+async def get_game_scores():
+    """Top scores públicos (placeholder para ranking futuro)."""
+    return {"scores": [], "message": "Ranking próximamente"}
+
+
 # ─── Admin / Superusuario ─────────────────────────────────────────────────────
 def get_superuser(current_user: models.User = Depends(get_current_user)):
     if not current_user.is_superuser:
@@ -629,6 +654,31 @@ def reset_password(body: dict, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "¡Contraseña actualizada! Ya puedes iniciar sesión."}
+
+
+# ─── Game Score ──────────────────────────────────────────────────────────────
+@app.post("/game/score", tags=["Game"])
+async def save_game_score(
+    body: dict,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Guarda el score del juego Maestro Bocadillero."""
+    logger.info(
+        f"Score juego: user={current_user.email} "
+        f"portal={body.get('portal')} score={body.get('score')} "
+        f"days={body.get('days')} money={body.get('money')}"
+    )
+    return {
+        "saved":  True,
+        "player": current_user.full_name or current_user.email,
+        "score":  body.get("score", 0),
+    }
+
+@app.get("/game/scores", tags=["Game"])
+async def get_game_scores():
+    """Top scores públicos (placeholder para ranking futuro)."""
+    return {"scores": [], "message": "Ranking próximamente"}
 
 
 # ─── Admin / Superusuario ─────────────────────────────────────────────────────
