@@ -288,14 +288,22 @@ function makeTrituraScene(imgs) {
       this.jugoParticles.emitParticleAt(W/2, H/2 - 30, 8)
       AudioFX.golpe()
 
-      // Shake
-      const imgs = [this.imgGuayaba, this.imgTroceada, this.imgPulpa, this.cracksG, this.borderG]
+      // Shake — guardar posición original y retornar a ella
+      const ix = W/2, iy = H/2 - 30
+      const shakeTargets = [this.imgGuayaba, this.imgTroceada, this.imgPulpa, this.cracksG, this.borderG]
+      const dx = Phaser.Math.Between(-10, 10)
+      const dy = Phaser.Math.Between(-7, 7)
       this.tweens.add({
-        targets: imgs,
-        x: `+=${Phaser.Math.Between(-10, 10)}`,
-        y: `+=${Phaser.Math.Between(-7, 7)}`,
+        targets: shakeTargets,
+        x: `+=${dx}`, y: `+=${dy}`,
         duration: 55, ease: 'Power1', yoyo: true,
-        onComplete: () => imgs.forEach(t => { t.x = 0; t.y = 0 })
+        onComplete: () => {
+          this.imgGuayaba.setPosition(ix, iy)
+          this.imgTroceada.setPosition(ix, iy)
+          this.imgPulpa.setPosition(ix, iy)
+          this.cracksG.setPosition(0, 0)
+          this.borderG.setPosition(0, 0)
+        }
       })
 
       // Cracks (solo fase entera)
