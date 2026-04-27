@@ -133,9 +133,10 @@ function makeTrituraScene() {
     init(data) { this.gameData = data || { money: 15000, day: 1, rep: 1, stock: 0, fulfilled: 0 } }
 
     preload() {
-      this.load.image('guayaba',  '/guayaba.png')
-      this.load.image('guayapul', '/guaya-pul.png')
-      this.load.image('pulpa',    '/pulpa.png')
+      const base = window.location.origin
+      this.load.image('guayaba',  base + '/guayaba.png')
+      this.load.image('guayapul', base + '/guaya-pul.png')
+      this.load.image('pulpa',    base + '/pulpa.png')
     }
 
     create() {
