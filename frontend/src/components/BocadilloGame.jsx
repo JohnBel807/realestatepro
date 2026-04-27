@@ -742,15 +742,22 @@ export default function BocadilloGame({ portalOrigin = 'com', serverUrl = '', on
   useEffect(() => {
     let cancelled = false
 
+    const preloadImages = (sources) =>
+      Promise.all(
+        Object.entries(sources).map(([key, src]) =>
+          new Promise(resolve => {
+            const img = new Image()
+            img.onload  = () => resolve([key, img])
+            img.onerror = () => resolve([key, null])
+            img.src = src
+          })
+        )
+      ).then(results => Object.fromEntries(results.filter(([, img]) => img)))
+
     const initPhaser = (htmlImages) => {
       if (cancelled || !containerRef.current || gameRef.current) return
       try {
         const Phaser = window.Phaser
-
-        // Registrar texturas desde HTMLImageElement — funciona con WebGL
-        const tmpGame = { texCache: {} }
-        const textureKeys = ['guayaba', 'guayapul', 'pulpa']
-
         const config = {
           type: Phaser.AUTO,
           width: W, height: H,
@@ -758,7 +765,7 @@ export default function BocadilloGame({ portalOrigin = 'com', serverUrl = '', on
           parent: containerRef.current,
           scene: [
             makeBootScene(cfg),
-            makeTrituraScene(htmlImages),  // pasar HTMLImageElements
+            makeTrituraScene(htmlImages),
             makePailaScene(),
             makeEmpaqueScene(),
             makeMercadoScene(portalOrigin, serverUrl),
@@ -767,9 +774,8 @@ export default function BocadilloGame({ portalOrigin = 'com', serverUrl = '', on
           render: { antialias: true, pixelArt: false },
           callbacks: {
             postBoot: (game) => {
-              // Agregar texturas reales una vez que Phaser arrancó
               Object.entries(htmlImages).forEach(([key, img]) => {
-                if (!game.textures.exists(key)) {
+                if (img && !game.textures.exists(key)) {
                   game.textures.addImage(key, img)
                 }
               })
@@ -783,24 +789,21 @@ export default function BocadilloGame({ portalOrigin = 'com', serverUrl = '', on
       }
     }
 
-    // Precargar imágenes con HTML Image() — compatible con WebGL de Phaser
-    const preloadImages = (sources) => {
-      return Promise.all(
-        Object.entries(sources).map(([key, src]) =>
-          new Promise((resolve) => {
-            const img = new Image()
-            img.onload  = () => resolve([key, img])
-            img.onerror = () => resolve([key, null])
-            img.src = src
-          })
-        )
-      ).then(results => Object.fromEntries(results.filter(([, img]) => img)))
+    const runGame = () => {
+      preloadImages(IMG_SRC).then(htmlImages => {
+        if (!cancelled) initPhaser(htmlImages)
+      })
     }
-    // Cargar Phaser dinámicamente
+
+    if (window.Phaser) {
+      runGame()
+      return
+    }
+
     const script = document.createElement('script')
     script.src = PHASER_CDN
     script.async = true
-    script.onload = () => { if (!cancelled) runGame() }
+    script.onload  = () => { if (!cancelled) runGame() }
     script.onerror = () => { if (!cancelled) setError('No se pudo cargar Phaser.js') }
     document.head.appendChild(script)
 
@@ -812,6 +815,7 @@ export default function BocadilloGame({ portalOrigin = 'com', serverUrl = '', on
       }
     }
   }, [])
+
 
   if (error) return (
     <div style={{ padding: '2rem', textAlign: 'center', background: '#1a0f05', borderRadius: 16, color: '#F5EFE6', fontFamily: 'system-ui' }}>
