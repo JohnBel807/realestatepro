@@ -176,16 +176,16 @@ function makeBootScene(cfg) {
   }
 }
 
-function makeTrituraScene() {
+function makeTrituraScene(imgs) {
   return class TrituraScene extends window.Phaser.Scene {
     constructor() { super('Tritura') }
     init(data) { this.gameData = data || { money: 15000, day: 1, rep: 1, stock: 0, fulfilled: 0 } }
 
     preload() {
-      // Imágenes en base64 — sin CORS, sin 404, funcionan en cualquier entorno
-      this.textures.addBase64('guayaba',  IMG_GUAYABA)
-      this.textures.addBase64('guayapul', IMG_GUAYAPUL)
-      this.textures.addBase64('pulpa',    IMG_PULPA)
+      // Imágenes en base64 pasadas como parámetro — accesibles en closure
+      this.textures.addBase64('guayaba',  imgs.guayaba)
+      this.textures.addBase64('guayapul', imgs.guayapul)
+      this.textures.addBase64('pulpa',    imgs.pulpa)
     }
 
     create() {
@@ -742,7 +742,7 @@ export default function BocadilloGame({ portalOrigin = 'com', serverUrl = '', on
           parent: containerRef.current,
           scene: [
             makeBootScene(cfg),
-            makeTrituraScene(),
+            makeTrituraScene({ guayaba: IMG_GUAYABA, guayapul: IMG_GUAYAPUL, pulpa: IMG_PULPA }),
             makePailaScene(),
             makeEmpaqueScene(),
             makeMercadoScene(portalOrigin, serverUrl),
