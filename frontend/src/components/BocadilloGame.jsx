@@ -197,13 +197,13 @@ function makeTrituraScene(imgs) {
     init(data) { this.gameData = data || { money: 15000, day: 1, rep: 1, stock: 0, fulfilled: 0 } }
 
     preload() {
-      // Texturas ya registradas en BootScene — verificar por si acaso
-      ;['guayaba','guayapul','pulpa'].forEach((key, i) => {
-        const htmlImg = [imgs.guayaba, imgs.guayapul, imgs.pulpa][i]
-        if (!this.textures.exists(key) && htmlImg instanceof HTMLImageElement) {
-          this.textures.addImage(key, htmlImg)
-        }
-      })
+      // Registrar texturas en preload() — antes de create()
+      ;[['guayaba', imgs.guayaba], ['guayapul', imgs.guayapul], ['pulpa', imgs.pulpa]]
+        .forEach(([key, htmlImg]) => {
+          if (htmlImg && !this.textures.exists(key)) {
+            this.textures.addImage(key, htmlImg)
+          }
+        })
     }
 
     create() {
@@ -220,10 +220,23 @@ function makeTrituraScene(imgs) {
 
       const ix = W/2, iy = H/2 - 30
 
-      // Texturas registradas en postBoot — disponibles en create()
-      this.imgGuayaba  = this.add.image(ix, iy, 'guayaba').setDisplaySize(150, 150).setAlpha(1)
-      this.imgTroceada = this.add.image(ix, iy, 'guayapul').setDisplaySize(150, 150).setAlpha(0)
-      this.imgPulpa    = this.add.image(ix, iy, 'pulpa').setDisplaySize(150, 150).setAlpha(0)
+      // Debug — ver en consola si las texturas llegaron
+      const hasG  = this.textures.exists('guayaba')
+      const hasGP = this.textures.exists('guayapul')
+      const hasP  = this.textures.exists('pulpa')
+      console.log('[Tritura] texturas:', { guayaba: hasG, guayapul: hasGP, pulpa: hasP })
+      console.log('[Tritura] imgs tipo:', {
+        guayaba:  imgs.guayaba  instanceof HTMLImageElement,
+        guayapul: imgs.guayapul instanceof HTMLImageElement,
+        pulpa:    imgs.pulpa    instanceof HTMLImageElement,
+      })
+
+      this.imgGuayaba  = hasG  ? this.add.image(ix, iy, 'guayaba').setDisplaySize(150,150).setAlpha(1)
+                                : this.add.graphics().fillStyle(0x7ec850,1).fillCircle(ix,iy,75)
+      this.imgTroceada = hasGP ? this.add.image(ix, iy, 'guayapul').setDisplaySize(150,150).setAlpha(0)
+                                : this.add.graphics().setAlpha(0)
+      this.imgPulpa    = hasP  ? this.add.image(ix, iy, 'pulpa').setDisplaySize(150,150).setAlpha(0)
+                                : this.add.graphics().setAlpha(0)
 
       // Máscara circular para que las fotos se vean redondas
       const mask = this.add.graphics()
