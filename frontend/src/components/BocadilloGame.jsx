@@ -139,6 +139,14 @@ function makeBootScene(cfg) {
   return class BootScene extends window.Phaser.Scene {
     constructor() { super('Boot') }
     create() {
+      // Registrar texturas desde HTMLImageElement — WebGL renderer ya listo aquí
+      const htmlImages = this.game.registry.get('htmlImages') || {}
+      Object.entries(htmlImages).forEach(([key, img]) => {
+        if (img && !this.textures.exists(key)) {
+          this.textures.addImage(key, img)
+        }
+      })
+
       this.add.rectangle(W / 2, H / 2, W, H, 0x1a0f05)
       // Logo decorativo
       const logo = this.add.text(W / 2, H / 2 - 80, '🍬', { fontSize: '56px' }).setOrigin(.5)
@@ -189,12 +197,11 @@ function makeTrituraScene(imgs) {
     init(data) { this.gameData = data || { money: 15000, day: 1, rep: 1, stock: 0, fulfilled: 0 } }
 
     preload() {
-      // Las texturas se registran en postBoot via addImage(key, HTMLImageElement)
-      // Aquí solo esperamos — si por alguna razón no están, las agregamos ahora
+      // Texturas ya registradas en BootScene — verificar por si acaso
       ;['guayaba','guayapul','pulpa'].forEach((key, i) => {
-        const src = [imgs.guayaba, imgs.guayapul, imgs.pulpa][i]
-        if (!this.textures.exists(key) && src instanceof HTMLImageElement) {
-          this.textures.addImage(key, src)
+        const htmlImg = [imgs.guayaba, imgs.guayapul, imgs.pulpa][i]
+        if (!this.textures.exists(key) && htmlImg instanceof HTMLImageElement) {
+          this.textures.addImage(key, htmlImg)
         }
       })
     }
@@ -772,17 +779,12 @@ export default function BocadilloGame({ portalOrigin = 'com', serverUrl = '', on
           ],
           scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
           render: { antialias: true, pixelArt: false },
-          callbacks: {
-            postBoot: (game) => {
-              Object.entries(htmlImages).forEach(([key, img]) => {
-                if (img && !game.textures.exists(key)) {
-                  game.textures.addImage(key, img)
-                }
-              })
-            }
-          }
+          // Sin postBoot — texturas se registran en BootScene.create()
         }
-        gameRef.current = new Phaser.Game(config)
+        const game = new Phaser.Game(config)
+        // Guardar imágenes en el registry para que BootScene las registre
+        game.registry.set('htmlImages', htmlImages)
+        gameRef.current = game
         setLoading(false)
       } catch (e) {
         setError('Error al iniciar el juego: ' + e.message)
