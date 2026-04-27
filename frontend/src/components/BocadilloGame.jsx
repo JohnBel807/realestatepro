@@ -182,10 +182,10 @@ function makeTrituraScene(imgs) {
     init(data) { this.gameData = data || { money: 15000, day: 1, rep: 1, stock: 0, fulfilled: 0 } }
 
     preload() {
-      // Imágenes en base64 pasadas como parámetro — accesibles en closure
-      this.textures.addBase64('guayaba',  imgs.guayaba)
-      this.textures.addBase64('guayapul', imgs.guayapul)
-      this.textures.addBase64('pulpa',    imgs.pulpa)
+      // load.image desde dataURL — síncrono con el pipeline de preload de Phaser
+      if (!this.textures.exists('guayaba'))  this.load.image('guayaba',  imgs.guayaba)
+      if (!this.textures.exists('guayapul')) this.load.image('guayapul', imgs.guayapul)
+      if (!this.textures.exists('pulpa'))    this.load.image('pulpa',    imgs.pulpa)
     }
 
     create() {
