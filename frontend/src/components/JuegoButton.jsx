@@ -22,11 +22,7 @@ export default function JuegoButton() {
         transition-all duration-200
         ${hovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 pointer-events-none'}
       `}>
-        <img
-        src="/juego-icon.jpg"
-        alt="Juego"
-        style={{ width: 30, height: 30, objectFit: 'contain' }}
-        /> Maestro Bocadillero
+        🍬 Maestro Bocadillero
       </span>
 
       {/* Botón */}
@@ -42,7 +38,15 @@ export default function JuegoButton() {
             boxShadow: '0 4px 20px rgba(107,78,42,0.4)',
           }}
         >
-          <span style={{ fontSize: 26, lineHeight: 1 }}>🍬</span>
+          <img
+            src="/juego-icon.jpg"
+            alt="Bocadillo de Vélez"
+            style={{
+              width: 36, height: 36,
+              objectFit: 'cover',
+              borderRadius: '50%',
+            }}
+          />
         </div>
       </div>
     </button>
