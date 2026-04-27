@@ -22,7 +22,11 @@ export default function JuegoButton() {
         transition-all duration-200
         ${hovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 pointer-events-none'}
       `}>
-        🍬 Maestro Bocadillero
+        <img
+        src="/juego-icon.jpg"
+        alt="Juego"
+        style={{ width: 30, height: 30, objectFit: 'contain' }}
+        /> Maestro Bocadillero
       </span>
 
       {/* Botón */}
