@@ -238,14 +238,14 @@ function makeTrituraScene(imgs) {
       this.imgPulpa    = hasP  ? this.add.image(ix, iy, 'pulpa').setDisplaySize(150,150).setAlpha(0)
                                 : this.add.graphics().setAlpha(0)
 
-      // Máscara circular para que las fotos se vean redondas
-      const mask = this.add.graphics()
-      mask.fillStyle(0xffffff)
-      mask.fillCircle(ix, iy, 76)
-      const geomMask = mask.createGeometryMask()
-      this.imgGuayaba.setMask(geomMask)
-      this.imgTroceada.setMask(geomMask)
-      this.imgPulpa.setMask(geomMask)
+      // Máscara circular via BitmapMask — compatible con WebGL
+      const maskGfx = this.make.graphics({ x: 0, y: 0, add: false })
+      maskGfx.fillStyle(0xffffff)
+      maskGfx.fillCircle(ix, iy, 76)
+      const bitmapMask = maskGfx.createBitmapMask()
+      if (this.imgGuayaba.setMask)  this.imgGuayaba.setMask(bitmapMask)
+      if (this.imgTroceada.setMask) this.imgTroceada.setMask(bitmapMask)
+      if (this.imgPulpa.setMask)    this.imgPulpa.setMask(bitmapMask)
 
       // Borde decorativo encima
       this.borderG = this.add.graphics()
