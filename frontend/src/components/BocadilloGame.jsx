@@ -5,7 +5,6 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react'
-import Phaser from 'phaser';
 
 const TIERRA  = 0x6B4E2A
 const NARANJA = 0xC4631A
