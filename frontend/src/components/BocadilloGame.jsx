@@ -231,26 +231,18 @@ function makeTrituraScene(imgs) {
         pulpa:    imgs.pulpa    instanceof HTMLImageElement,
       })
 
-      this.imgGuayaba  = hasG  ? this.add.image(ix, iy, 'guayaba').setDisplaySize(150,150).setAlpha(1)
+      this.imgGuayaba  = hasG  ? this.add.image(ix, iy, 'guayaba').setDisplaySize(160,160).setAlpha(1)
                                 : this.add.graphics().fillStyle(0x7ec850,1).fillCircle(ix,iy,75)
-      this.imgTroceada = hasGP ? this.add.image(ix, iy, 'guayapul').setDisplaySize(150,150).setAlpha(0)
+      this.imgTroceada = hasGP ? this.add.image(ix, iy, 'guayapul').setDisplaySize(160,160).setAlpha(0)
                                 : this.add.graphics().setAlpha(0)
-      this.imgPulpa    = hasP  ? this.add.image(ix, iy, 'pulpa').setDisplaySize(150,150).setAlpha(0)
+      this.imgPulpa    = hasP  ? this.add.image(ix, iy, 'pulpa').setDisplaySize(160,160).setAlpha(0)
                                 : this.add.graphics().setAlpha(0)
 
-      // Máscara circular via BitmapMask — compatible con WebGL
-      const maskGfx = this.make.graphics({ x: 0, y: 0, add: false })
-      maskGfx.fillStyle(0xffffff)
-      maskGfx.fillCircle(ix, iy, 76)
-      const bitmapMask = maskGfx.createBitmapMask()
-      if (this.imgGuayaba.setMask)  this.imgGuayaba.setMask(bitmapMask)
-      if (this.imgTroceada.setMask) this.imgTroceada.setMask(bitmapMask)
-      if (this.imgPulpa.setMask)    this.imgPulpa.setMask(bitmapMask)
-
-      // Borde decorativo encima
+      // Sin máscara — las imágenes se muestran en su forma natural
+      // Borde decorativo redondeado
       this.borderG = this.add.graphics()
       this.borderG.lineStyle(3, 0x5a3f20, .8)
-      this.borderG.strokeCircle(ix, iy, 76)
+      this.borderG.strokeRoundedRect(ix - 78, iy - 78, 156, 156, 12)
 
       // Cracks (solo en fase 0)
       this.cracksG = this.add.graphics()
