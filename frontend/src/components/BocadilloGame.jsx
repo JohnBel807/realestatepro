@@ -131,95 +131,147 @@ function makeTrituraScene() {
   return class TrituraScene extends window.Phaser.Scene {
     constructor() { super('Tritura') }
     init(data) { this.gameData = data || { money: 15000, day: 1, rep: 1, stock: 0, fulfilled: 0 } }
+
+    preload() {
+      this.load.image('guayaba',  '/guayaba.png')
+      this.load.image('guayapul', '/guaya-pul.png')
+      this.load.image('pulpa',    '/pulpa.png')
+    }
+
     create() {
-      this.clicks = 0; this.needed = 28
-      this.add.rectangle(W / 2, H / 2, W, H, 0x1a0f05)
+      this.clicks = 0; this.needed = 28; this.fase = 0
+      this.add.rectangle(W/2, H/2, W, H, 0x1a0f05)
       drawMesa(this)
       drawStepBar(this, 1)
-      this.add.text(W / 2, 28, '1 — Tritura la guayaba', {
+      this.add.text(W/2, 28, '1 — Tritura la guayaba', {
         fontSize: '13px', color: '#9ca3af', fontFamily: 'system-ui'
       }).setOrigin(.5)
-      this.add.text(W / 2, 52, 'Día ' + this.gameData.day, {
+      this.add.text(W/2, 52, 'Día ' + this.gameData.day, {
         fontSize: '11px', color: '#C4631A', fontFamily: 'system-ui'
       }).setOrigin(.5)
-      // Guayaba
-      this.frutaG = this.add.graphics()
-      drawGuayaba(this.frutaG, W / 2, H / 2 - 40, 68)
-      this.brilloG = this.add.graphics()
-      this.brilloG.fillStyle(0xffffff, .25)
-      this.brilloG.fillEllipse(W / 2 - 20, H / 2 - 68, 28, 16)
-      // Cracks container
+
+      const ix = W/2, iy = H/2 - 30
+
+      // 3 imágenes superpuestas — transición por alpha
+      this.imgGuayaba  = this.add.image(ix, iy, 'guayaba').setDisplaySize(150, 150).setAlpha(1)
+      this.imgTroceada = this.add.image(ix, iy, 'guayapul').setDisplaySize(150, 150).setAlpha(0)
+      this.imgPulpa    = this.add.image(ix, iy, 'pulpa').setDisplaySize(150, 150).setAlpha(0)
+
+      // Máscara circular para que las fotos se vean redondas
+      const mask = this.add.graphics()
+      mask.fillStyle(0xffffff)
+      mask.fillCircle(ix, iy, 76)
+      const geomMask = mask.createGeometryMask()
+      this.imgGuayaba.setMask(geomMask)
+      this.imgTroceada.setMask(geomMask)
+      this.imgPulpa.setMask(geomMask)
+
+      // Borde decorativo encima
+      this.borderG = this.add.graphics()
+      this.borderG.lineStyle(3, 0x5a3f20, .8)
+      this.borderG.strokeCircle(ix, iy, 76)
+
+      // Cracks (solo en fase 0)
       this.cracksG = this.add.graphics()
+
       // Partículas jugo
       this.jugoParticles = this.add.particles(0, 0, '', {
-        x: { min: W / 2 - 35, max: W / 2 + 35 },
-        y: { min: H / 2 - 50, max: H / 2 },
-        lifespan: 500, speedY: { min: -90, max: -30 }, speedX: { min: -50, max: 50 },
-        scale: { start: .55, end: 0 }, tint: [0xE8613C, 0xC4631A, 0xff7043],
+        x: { min: ix-40, max: ix+40 }, y: { min: iy-50, max: iy+10 },
+        lifespan: 550, speedY: { min: -100, max: -30 }, speedX: { min: -55, max: 55 },
+        scale: { start: .6, end: 0 },
+        tint: [0xE8613C, 0xff6b6b, 0xffa07a, 0xC4631A],
         quantity: 0, emitting: false,
       })
+
       // Barra progreso
-      this.add.rectangle(W / 2, H - 130, 320, 14, 0x2a1f10).setOrigin(.5)
-      this.barFill = this.add.rectangle(W / 2 - 160, H - 130, 0, 14, NARANJA).setOrigin(0, .5)
-      this.progTxt = this.add.text(W / 2, H - 108, '0 / ' + this.needed + ' golpes', {
+      this.add.rectangle(W/2, H-130, 320, 14, 0x2a1f10).setOrigin(.5)
+      this.barFill = this.add.rectangle(W/2-160, H-130, 0, 14, NARANJA).setOrigin(0, .5)
+      this.progTxt = this.add.text(W/2, H-108, '0 / ' + this.needed + ' golpes', {
         fontSize: '11px', color: '#9ca3af', fontFamily: 'system-ui'
       }).setOrigin(.5)
-      // Hint animado
-      const hint = this.add.text(W / 2, H / 2 + 45, '¡Golpea la fruta!', {
+
+      // Label estado
+      this.estadoTxt = this.add.text(W/2, iy + 95, 'Guayaba entera', {
+        fontSize: '11px', color: '#6b7280', fontFamily: 'system-ui'
+      }).setOrigin(.5)
+
+      // Hint
+      const hint = this.add.text(W/2, iy + 112, '¡Golpea la fruta!', {
         fontSize: '13px', color: '#9ca3af', fontFamily: 'system-ui'
       }).setOrigin(.5)
       this.tweens.add({ targets: hint, alpha: 0, duration: 800, yoyo: true, repeat: -1, ease: 'Sine' })
+
       // Zona interactiva
-      const hit = this.add.rectangle(W / 2, H / 2 - 40, 160, 160, 0, 0).setInteractive({ useHandCursor: true })
+      const hit = this.add.rectangle(ix, iy, 170, 170, 0, 0).setInteractive({ useHandCursor: true })
       hit.on('pointerdown', () => this.golpear())
     }
+
     golpear() {
       this.clicks++
       const pct = this.clicks / this.needed
+
       this.tweens.add({ targets: this.barFill, width: 320 * pct, duration: 90, ease: 'Power2' })
       this.progTxt.setText(this.clicks + ' / ' + this.needed + ' golpes')
-      this.jugoParticles.emitParticleAt(W / 2, H / 2 - 20, 7)
-      // Shake con tween
-      const ox = this.frutaG.x, oy = this.frutaG.y
+      this.jugoParticles.emitParticleAt(W/2, H/2 - 30, 8)
+
+      // Shake
+      const imgs = [this.imgGuayaba, this.imgTroceada, this.imgPulpa, this.cracksG, this.borderG]
       this.tweens.add({
-        targets: [this.frutaG, this.brilloG],
-        x: ox + Phaser.Math.Between(-9, 9), y: oy + Phaser.Math.Between(-6, 6),
+        targets: imgs,
+        x: `+=${Phaser.Math.Between(-10, 10)}`,
+        y: `+=${Phaser.Math.Between(-7, 7)}`,
         duration: 55, ease: 'Power1', yoyo: true,
-        onComplete: () => { this.frutaG.x = ox; this.frutaG.y = oy; this.brilloG.x = ox; this.brilloG.y = oy }
+        onComplete: () => imgs.forEach(t => { t.x = 0; t.y = 0 })
       })
-      // Crack cada 4 clicks
-      if (this.clicks % 4 === 0) {
+
+      // Cracks (solo fase entera)
+      if (this.fase === 0 && this.clicks % 3 === 0) {
         const angle = Math.random() * Math.PI * 2
-        const r = 20 + Math.random() * 35
-        this.cracksG.lineStyle(1, 0x7B1500, .65)
+        const r = 18 + Math.random() * 42
+        this.cracksG.lineStyle(1.5, 0x3a0800, .75)
         this.cracksG.beginPath()
-        this.cracksG.moveTo(W / 2 + Math.cos(angle) * 8, H / 2 - 40 + Math.sin(angle) * 8)
-        this.cracksG.lineTo(W / 2 + Math.cos(angle) * r, H / 2 - 40 + Math.sin(angle) * r)
+        this.cracksG.moveTo(W/2 + Math.cos(angle) * 10, H/2 - 30 + Math.sin(angle) * 10)
+        this.cracksG.lineTo(W/2 + Math.cos(angle) * r,  H/2 - 30 + Math.sin(angle) * r)
         this.cracksG.strokePath()
       }
-      // Oscurecer fruta según progreso
-      const c = Phaser.Display.Color.Interpolate.ColorWithColor(
-        Phaser.Display.Color.ValueToColor(0xE8613C),
-        Phaser.Display.Color.ValueToColor(0x7B1500),
-        100, Math.round(pct * 100)
-      )
-      drawGuayaba(this.frutaG, W / 2, H / 2 - 40, 68, Phaser.Display.Color.GetColor(c.r, c.g, c.b))
+
+      // ── Transiciones por umbral ──
+      if (pct >= 0.40 && this.fase === 0) {
+        this.fase = 1
+        this.cracksG.clear()
+        this.estadoTxt.setText('Troceando...')
+        this.tweens.add({ targets: this.imgGuayaba,  alpha: 0, duration: 400, ease: 'Power2' })
+        this.tweens.add({ targets: this.imgTroceada, alpha: 1, duration: 400, ease: 'Power2' })
+        this.borderG.clear()
+        this.borderG.lineStyle(3, 0xC4631A, .8)
+        this.borderG.strokeCircle(W/2, H/2 - 30, 76)
+      }
+      if (pct >= 0.75 && this.fase === 1) {
+        this.fase = 2
+        this.estadoTxt.setText('Pulpa lista')
+        this.tweens.add({ targets: this.imgTroceada, alpha: 0, duration: 400, ease: 'Power2' })
+        this.tweens.add({ targets: this.imgPulpa,    alpha: 1, duration: 400, ease: 'Power2' })
+        this.borderG.clear()
+        this.borderG.lineStyle(3, VERDE, .8)
+        this.borderG.strokeCircle(W/2, H/2 - 30, 76)
+      }
+
       if (this.clicks >= this.needed) this.completar()
     }
+
     completar() {
       this.input.enabled = false
-      const flash = this.add.rectangle(W / 2, H / 2, W, H, VERDE, 0)
-      this.add.text(W / 2, H / 2 + 80, '¡Fruta lista para la paila!', {
+      const flash = this.add.rectangle(W/2, H/2, W, H, VERDE, 0)
+      this.add.text(W/2, H/2 + 100, '¡Pulpa lista para la paila!', {
         fontSize: '16px', color: '#fff', fontFamily: 'Georgia,serif'
       }).setOrigin(.5)
       this.tweens.add({
-        targets: flash, alpha: .45, duration: 200, yoyo: true,
+        targets: flash, alpha: .45, duration: 220, yoyo: true,
         onComplete: () => this.scene.start('Paila', this.gameData)
       })
     }
   }
 }
-
 function makePailaScene() {
   return class PailaScene extends window.Phaser.Scene {
     constructor() { super('Paila') }
