@@ -9,6 +9,7 @@ import { ToastProvider, useToast } from './components/ui/Toast'
 import Navbar from './components/Navbar'
 import ProtectedRoute from './components/ProtectedRoute'
 import WhatsAppButton from './components/WhatsAppButton'
+import JuegoButton    from './components/JuegoButton'
 import MarketplaceSidebar from './components/MarketplaceSidebar'
 import { TraeNosWidget } from './components/TraeNos'
 
@@ -89,6 +90,8 @@ function AppInner() {
       <MarketplaceSidebar />
       {/* Widget TraeNos */}
       <TraeNosWidget />
+      {/* Botón juego */}
+      <JuegoButton />
     </BrowserRouter>
   )
 }
