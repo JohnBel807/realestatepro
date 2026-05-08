@@ -107,6 +107,8 @@ def _apply_schema_patches():
             )
         if 'admin_fee' not in prop_cols:
             patches.append("ALTER TABLE properties ADD COLUMN admin_fee FLOAT")
+        if 'views_count' not in prop_cols:
+            patches.append("ALTER TABLE properties ADD COLUMN views_count INTEGER DEFAULT 0")
         if 'available_from' not in prop_cols:
             patches.append(
                 "ALTER TABLE properties ADD COLUMN available_from TIMESTAMPTZ"
@@ -441,6 +443,10 @@ def get_property(property_id: int, db: Session = Depends(get_db)):
     prop = crud.get_property(db, property_id=property_id)
     if not prop:
         raise HTTPException(status_code=404, detail="Propiedad no encontrada")
+    # Incrementar contador de vistas
+    prop.views_count = (prop.views_count or 0) + 1
+    db.commit()
+    db.refresh(prop)
     return prop
 
 
@@ -770,11 +776,7 @@ def list_properties(
 
 
 @app.get("/properties/{property_id}", response_model=schemas.PropertyOut, tags=["Properties"])
-def get_property(property_id: int, db: Session = Depends(get_db)):
-    prop = crud.get_property(db, property_id=property_id)
-    if not prop:
-        raise HTTPException(status_code=404, detail="Propiedad no encontrada")
-    return prop
+# Endpoint duplicado eliminado — ver definición arriba
 
 
 @app.post("/properties", response_model=schemas.PropertyOut, status_code=201, tags=["Properties"])
