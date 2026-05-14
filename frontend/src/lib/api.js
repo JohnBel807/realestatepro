@@ -26,6 +26,9 @@ api.interceptors.request.use(
 )
 
 // ─── Response interceptor con toasts ──────────────────────────────────────────
+// Flag para evitar múltiples toasts y redirects por 401 simultáneos
+let _sessionExpiredHandled = false
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -33,12 +36,18 @@ api.interceptors.response.use(
     const detail = error.response?.data?.detail
 
     if (!error.response) {
-      // Sin conexión
       _toast?.network('Sin conexión. Revisa tu internet.', { duration: 6000 })
     } else if (status === 401) {
-      localStorage.removeItem('access_token')
-      _toast?.warning('Sesión expirada. Inicia sesión de nuevo.')
-      setTimeout(() => { window.location.href = '/login' }, 1500)
+      // Manejar solo una vez aunque haya múltiples peticiones fallidas
+      if (!_sessionExpiredHandled) {
+        _sessionExpiredHandled = true
+        localStorage.removeItem('access_token')
+        _toast?.warning('Sesión expirada. Inicia sesión de nuevo.')
+        setTimeout(() => {
+          _sessionExpiredHandled = false   // reset para próxima sesión
+          window.location.href = '/login'
+        }, 1800)
+      }
     } else if (status === 403) {
       _toast?.warning(detail || 'No tienes permiso para realizar esta acción.')
     } else if (status === 422) {
