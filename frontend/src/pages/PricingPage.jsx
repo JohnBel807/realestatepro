@@ -171,6 +171,8 @@ export default function PricingPage() {
   const [loading,      setLoading]      = useState(null)
   const [checkoutData, setCheckoutData] = useState(null)
 
+  const isPromoActiva = new Date() >= new Date('2026-05-15') && new Date() < new Date('2026-06-16')
+
   const authed   = isAuthenticated()
   const inTrial  = user?.trial_ends_at && new Date(user.trial_ends_at) > new Date()
   const hasSub   = subscription?.status === 'active'
@@ -242,6 +244,48 @@ export default function PricingPage() {
                 (new Date(user.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24)
               ))} días restantes.
             </p>
+          </div>
+        )}
+
+        {/* Banner Plan Propietario */}
+        {isPromoActiva && (
+          <div className="mb-8">
+            <div className="relative rounded-2xl overflow-hidden border border-amber-400 shadow-xl">
+              <div className="absolute top-3 right-3 z-10">
+                <span className="bg-amber-500 text-stone-900 text-xs font-semibold px-3 py-1 rounded-full">
+                  ¡Solo hasta el 15 de junio!
+                </span>
+              </div>
+              <div className="bg-stone-900 p-6 flex flex-col md:flex-row items-center gap-6">
+                <div className="flex-1">
+                  <p className="text-xs font-medium uppercase tracking-widest text-amber-400 mb-1">Plan Propietario · Lanzamiento</p>
+                  <h2 className="font-serif text-2xl font-semibold text-stone-100 mb-1">Publica tu propiedad todo el año</h2>
+                  <p className="text-stone-400 text-sm mb-3">1 propiedad · 12 meses · Para propietarios individuales</p>
+                  <div className="flex flex-wrap gap-3 text-xs text-stone-400">
+                    {['Fotos y descripción','Contacto directo','Visible en toda la región','Sin pagos recurrentes'].map(f=>(
+                      <span key={f} className="flex items-center gap-1"><span className="text-emerald-400">✓</span>{f}</span>
+                    ))}
+                  </div>
+                  <p className="text-xs text-stone-500 mt-3">Segundo año al precio regular del plan Basic ($19.900/mes)</p>
+                </div>
+                <div className="text-center shrink-0">
+                  <div className="text-5xl font-serif font-semibold text-amber-400">$50.000</div>
+                  <div className="text-stone-400 text-sm">COP · todo el año</div>
+                  <div className="text-stone-500 text-xs mt-1">Menos de $140 por mes</div>
+                  <button
+                    onClick={()=>handleChoose('propietario_anual')}
+                    disabled={!authed||loading==='propietario_anual'}
+                    className="mt-4 bg-amber-500 hover:bg-amber-400 text-stone-900 font-semibold text-sm px-6 py-2.5 rounded-xl transition-all disabled:opacity-60 w-full"
+                  >
+                    {!authed?'Regístrate gratis →':loading==='propietario_anual'?'Procesando…':'Publicar mi propiedad →'}
+                  </button>
+                </div>
+              </div>
+              <div className="bg-amber-500/10 border-t border-amber-400/20 px-6 py-2 flex justify-between">
+                <span className="text-xs text-amber-400/70">Vigente 15 mayo – 15 junio 2026</span>
+                <span className="text-xs text-stone-500">Cupos limitados</span>
+              </div>
+            </div>
           </div>
         )}
 

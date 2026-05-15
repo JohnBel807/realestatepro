@@ -133,6 +133,7 @@ class PlanRequest(BaseModel):
             "basic", "pro", "enterprise",
             "basic_monthly", "pro_monthly", "enterprise_monthly",
             "basic_annual",  "pro_annual",  "enterprise_annual",
+            "propietario_anual",
         }
         if v not in valid:
             raise ValueError(f"Plan inválido: {v}")

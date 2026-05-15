@@ -29,7 +29,19 @@ BASE_URL = (
 )
 
 # ─── Precios en centavos de COP ───────────────────────────────────────────────
+from datetime import date
+
+# Promoción Plan Propietario — vigente 15 mayo al 15 junio 2026
+PROMO_PROPIETARIO_INICIO = date(2026, 5, 15)
+PROMO_PROPIETARIO_FIN    = date(2026, 6, 15)
+
+def promo_propietario_activa() -> bool:
+    hoy = date.today()
+    return PROMO_PROPIETARIO_INICIO <= hoy <= PROMO_PROPIETARIO_FIN
+
 PLAN_PRICES = {
+    # Plan Propietario — promoción anual $50.000 COP
+    "propietario_anual":   5_000_000,   # $50.000 COP en centavos
     # Mensual
     "basic_monthly":       1_990_000,
     "pro_monthly":         5_990_000,
@@ -45,6 +57,7 @@ PLAN_PRICES = {
 }
 
 PLAN_NAMES = {
+    "propietario_anual":  "Plan Propietario Anual — VelezyRicaurte (1 propiedad · 12 meses)",
     "basic_monthly":      "VelezyRicaurte Basic Mensual",
     "pro_monthly":        "VelezyRicaurte Pro Mensual",
     "enterprise_monthly": "VelezyRicaurte Enterprise Mensual",
