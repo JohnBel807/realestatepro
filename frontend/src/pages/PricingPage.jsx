@@ -271,7 +271,7 @@ export default function PricingPage() {
                 <div className="text-center shrink-0">
                   <div className="text-5xl font-serif font-semibold text-amber-400">$50.000</div>
                   <div className="text-stone-400 text-sm">COP · todo el año</div>
-                  <div className="text-stone-500 text-xs mt-1">Menos de $140 por mes</div>
+                  <div className="text-stone-500 text-xs mt-1">Menos de $140 por día</div>
                   <button
                     onClick={()=>handleChoose('propietario_anual')}
                     disabled={!authed||loading==='propietario_anual'}
