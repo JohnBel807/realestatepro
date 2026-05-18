@@ -5,6 +5,7 @@ import React from 'react'
 import { useState } from 'react'
 import { Heart, MapPin, BedDouble, Bath, Maximize, Eye } from 'lucide-react'
 import { formatPrice, cloudinaryThumb } from '../lib/formatters'
+import { useTranslation } from 'react-i18next'
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 export function PropertyCardSkeleton() {
@@ -53,6 +54,8 @@ export default function PropertyCard({ property, onNavigate }) {
   const isRent = listing_type === 'rent'
   const isRentSale = listing_type === 'rent_sale'
   const displayPrice = isRent ? rental_price : price
+  const { i18n } = useTranslation()
+  const lang = i18n.language || 'es'
   const displayCurrency = price_currency
 
   const locationStr = [neighborhood, city].filter(Boolean).join(' · ')
@@ -120,15 +123,15 @@ export default function PropertyCard({ property, onNavigate }) {
           {isRentSale ? (
             <div className="flex flex-col gap-0">
               <p className="font-serif text-lg font-semibold text-stone-900 leading-tight">
-                {formatPrice(price, price_currency)}
+                {formatPrice(price, price_currency, lang)}
               </p>
               <p className="text-xs text-amber-700 font-medium">
-                {formatPrice(rental_price, price_currency)}<span className="text-stone-400 font-normal">/mes</span>
+                {formatPrice(rental_price, price_currency, lang)}<span className="text-stone-400 font-normal">/mes</span>
               </p>
             </div>
           ) : (
             <p className="font-serif text-xl font-semibold text-stone-900">
-              {formatPrice(displayPrice, displayCurrency)}
+              {formatPrice(displayPrice, displayCurrency, lang)}
               {isRent && <span className="text-sm font-normal text-stone-400">/mes</span>}
             </p>
           )}

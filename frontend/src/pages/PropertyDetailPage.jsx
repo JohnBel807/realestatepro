@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { propertiesAPI } from '../lib/api'
 import { TraeNosBotonPropiedad } from '../components/TraeNos'
-import { formatPrice, formatRelativeDate, cloudinaryDetail } from '../lib/formatters'
+import { formatPrice, formatPriceDual, formatRelativeDate, cloudinaryDetail } from '../lib/formatters'
 
 // Skeleton para la página de detalle
 function DetailSkeleton() {
@@ -276,7 +276,17 @@ export default function PropertyDetailPage() {
                 <p className="font-serif text-2xl font-semibold text-stone-900">
                   {formatPrice(rental_price, price_currency)}<span className="text-sm font-normal text-stone-400">/mes</span>
                 </p>
-                <p className="text-xs text-stone-500 mb-1">Precio de venta: <span className="font-medium">{formatPrice(price, price_currency)}</span></p>
+                <p className="text-xs text-stone-500 mb-1">Precio de venta: <span className="font-medium">{(() => {
+                  const dual = formatPriceDual(price, price_currency)
+                  return (
+                    <span className="flex flex-col">
+                      <span className="font-semibold text-stone-900 text-xl tracking-tight tabular-nums">{dual.main}</span>
+                      {dual.secondary && (
+                        <span className="text-xs text-stone-400 font-normal mt-0.5">{dual.secondary}</span>
+                      )}
+                    </span>
+                  )
+                })()}</span></p>
               </>
             ) : isRent ? (
               <>
