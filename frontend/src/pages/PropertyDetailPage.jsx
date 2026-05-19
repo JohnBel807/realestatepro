@@ -291,7 +291,7 @@ export default function PropertyDetailPage() {
             ) : isRent ? (
               <>
                 <p className="text-xs text-stone-400 uppercase tracking-wider mb-1">Canon mensual</p>
-                <p className="font-serif text-3xl font-semibold text-stone-900 mb-0.5">
+                <p className="text-2xl font-semibold text-stone-900 mb-0.5 tabular-nums tracking-tight" style={{fontFamily:"'DM Sans',system-ui,sans-serif"}}>
                   {formatPrice(rental_price, price_currency)}
                   <span className="text-base font-normal text-stone-400">/mes</span>
                 </p>
@@ -299,9 +299,14 @@ export default function PropertyDetailPage() {
             ) : (
               <>
                 <p className="text-xs text-stone-400 uppercase tracking-wider mb-1">Precio de venta</p>
-                <p className="font-serif text-3xl font-semibold text-stone-900 mb-0.5">
+                <p className="text-2xl font-semibold text-stone-900 mb-0.5 tabular-nums tracking-tight" style={{fontFamily:"'DM Sans',system-ui,sans-serif"}}>
                   {formatPrice(price, price_currency)}
                 </p>
+                {formatPriceDual(price, price_currency).secondary && (
+                  <p className="text-xs text-stone-400 mb-1 tabular-nums">
+                    {formatPriceDual(price, price_currency).secondary}
+                  </p>
+                )}
                 <p className="text-xs text-stone-400 mb-1">
                   {price_currency} · {(price / area_m2).toLocaleString('es-CO', { maximumFractionDigits: 0 })} por m²
                 </p>
@@ -335,19 +340,10 @@ export default function PropertyDetailPage() {
             )}
             <div className="mb-4" />
 
-            {contactSent ? (
-              <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-sm">
-                <CheckCircle2 size={16} className="shrink-0" />
-                ¡Solicitud enviada! El vendedor te contactará pronto.
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => setContactSent(true)}
-                  className="w-full flex items-center justify-center gap-2 bg-stone-900 hover:bg-stone-800 text-white text-sm font-medium py-2.5 px-4 rounded-xl transition-colors"
-                >
-                  Contactar al vendedor
-                </button>
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
+                Contactar al vendedor
+              </p>
                 {owner?.phone && (
                   <a
                     href={`https://wa.me/${owner.phone.replace(/\D/g, '')}?text=Hola, estoy interesado en la propiedad: ${title}`}
@@ -378,8 +374,7 @@ export default function PropertyDetailPage() {
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                   Enviar correo
                 </a>
-              </div>
-            )}
+            </div>
           </div>
 
           {/* Info del agente */}
