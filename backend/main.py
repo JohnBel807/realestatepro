@@ -190,7 +190,9 @@ def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/auth/token", response_model=schemas.Token, tags=["Auth"])
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = crud.get_user_by_email(db, email=form_data.username)
+    # Normalizar email — no importa si el usuario escribe mayúsculas
+    email = form_data.username.strip().lower()
+    user = crud.get_user_by_email(db, email=email)
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

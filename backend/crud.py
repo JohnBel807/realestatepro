@@ -23,17 +23,20 @@ def get_user(db: Session, user_id: int) -> Optional[models.User]:
 
 
 def get_user_by_email(db: Session, email: str) -> Optional[models.User]:
-    return db.query(models.User).filter(models.User.email == email).first()
+    # Normalizar a minúsculas — evita problemas con mayúsculas al registrar/login
+    return db.query(models.User).filter(
+        models.User.email == email.strip().lower()
+    ).first()
 
 
 def create_user(db: Session, user_in: schemas.UserCreate, hashed_password: str) -> models.User:
     trial_ends = datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS)
     user = models.User(
-        email=user_in.email,
+        email=user_in.email.strip().lower(),   # siempre minúsculas
         full_name=user_in.full_name,
         phone=user_in.phone,
         hashed_password=hashed_password,
-        trial_ends_at=trial_ends,       # ← trial de 30 días desde el registro
+        trial_ends_at=trial_ends,
     )
     db.add(user)
     db.commit()

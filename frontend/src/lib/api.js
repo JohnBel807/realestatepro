@@ -65,7 +65,7 @@ export default api
 // ─── Auth API ─────────────────────────────────────────────────────────────────
 export const authAPI = {
   login: (email, password) =>
-    api.post('/auth/token', new URLSearchParams({ username: email, password }), {
+    api.post('/auth/token', new URLSearchParams({ username: email.trim().toLowerCase(), password }), {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     }),
   register: (data) => api.post('/auth/register', data),
