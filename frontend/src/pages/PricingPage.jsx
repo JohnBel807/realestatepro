@@ -217,11 +217,11 @@ export default function PricingPage() {
           </span>
           <button
             onClick={() => setAnnual(a => !a)}
-            className={`relative w-12 h-6 rounded-full transition-colors duration-200
+            className={`relative w-14 h-7 rounded-full transition-colors duration-200 flex-shrink-0
               ${annual ? 'bg-emerald-500' : 'bg-stone-300'}`}>
-            <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow
+            <span className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow
               transition-transform duration-200
-              ${annual ? 'translate-x-6' : 'translate-x-0.5'}`} />
+              ${annual ? 'translate-x-7' : 'translate-x-0'}`} />
           </button>
           <span className={`text-sm font-medium ${annual ? 'text-stone-900' : 'text-stone-400'}`}>
             Anual
@@ -271,7 +271,7 @@ export default function PricingPage() {
                 <div className="text-center shrink-0">
                   <div className="text-5xl font-serif font-semibold text-amber-400">$50.000</div>
                   <div className="text-stone-400 text-sm">COP · todo el año</div>
-                  <div className="text-stone-500 text-xs mt-1">Menos de $140 por día</div>
+                  <div className="text-stone-500 text-xs mt-1">Menos de $140 por mes</div>
                   <button
                     onClick={()=>handleChoose('propietario_anual')}
                     disabled={!authed||loading==='propietario_anual'}
