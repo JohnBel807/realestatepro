@@ -300,8 +300,23 @@ export default function HomePage() {
           {/* Aliados */}
           <div className="pt-4 border-t border-stone-100 mb-4">
             <p className="text-xs font-medium text-stone-400 uppercase tracking-wider mb-2">Aliados</p>
-            <div className="max-w-[200px]">
-              <TraeNosFooterCard />
+            <div className="flex flex-wrap gap-3 items-start">
+              <div className="max-w-[200px]">
+                <TraeNosFooterCard />
+              </div>
+              <a
+                href="https://region.velezyricaurte.com"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 bg-stone-800 hover:bg-stone-700 transition-colors
+                  rounded-xl px-3 py-3 no-underline max-w-[200px]"
+              >
+                <span className="text-lg">🌿</span>
+                <div>
+                  <p className="text-xs font-semibold text-white leading-none mb-0.5">La Región</p>
+                  <p className="text-[10px] text-stone-400 leading-snug">Encantos de Vélez y Ricaurte</p>
+                </div>
+              </a>
             </div>
           </div>
 

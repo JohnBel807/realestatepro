@@ -60,6 +60,14 @@ export default function Navbar() {
           <NavLink to="/" label={t('nav.home')} />
           <NavLink to="/pricing" label={t('nav.pricing')} />
           {authed && <NavLink to="/dashboard" label={t('nav.dashboard')} />}
+          <a
+            href="https://region.velezyricaurte.com"
+            target="_blank"
+            rel="noreferrer"
+            className="text-sm font-medium text-stone-500 hover:text-amber-700 transition-colors flex items-center gap-1"
+          >
+            🌿 La región
+          </a>
         </nav>
 
         <div className="hidden md:flex items-center gap-2">
@@ -108,6 +116,14 @@ export default function Navbar() {
           <NavLink to="/" label={t('nav.home')} />
           <NavLink to="/pricing" label={t('nav.pricing')} />
           {authed && <NavLink to="/dashboard" label={t('nav.dashboard')} />}
+          <a
+            href="https://region.velezyricaurte.com"
+            target="_blank"
+            rel="noreferrer"
+            className="block text-sm font-medium text-stone-500 hover:text-amber-700 transition-colors py-1"
+          >
+            🌿 La región
+          </a>
           <div className="pt-2 flex gap-2">
             <LangToggle />
           </div>
