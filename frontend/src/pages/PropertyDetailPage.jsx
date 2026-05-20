@@ -136,7 +136,7 @@ export default function PropertyDetailPage() {
     area_m2, bedrooms, bathrooms,
     parking_spots, property_type, address, city, neighborhood, latitude, longitude,
     photos, features, is_furnished, has_balcony, has_elevator, pet_friendly,
-    views_count, is_featured, created_at, owner,
+    views_count, is_featured, created_at, owner, video_url,
   } = property
 
   const isRent = listing_type === 'rent'
@@ -238,6 +238,16 @@ export default function PropertyDetailPage() {
               <h2 className="font-serif text-lg font-medium mb-3">Descripción</h2>
               <p className="text-sm text-stone-600 leading-relaxed whitespace-pre-line">{description}</p>
             </div>
+          )}
+
+          {/* Video de YouTube */}
+          {video_url && (
+            <section className="mb-8">
+              <h2 className="font-serif text-xl font-semibold text-stone-900 mb-3">
+                Video de la propiedad
+              </h2>
+              <YouTubeEmbed url={video_url} title={title} />
+            </section>
           )}
 
           {/* Características y extras */}
