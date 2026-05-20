@@ -99,7 +99,7 @@ export function TraeNosWidget() {
   return (
     <div
       className="fixed z-40 flex flex-col items-end gap-2"
-      style={{ bottom: '6rem', right: '1.5rem' }}
+      style={{ bottom: '5.5rem', right: '1.5rem' }}
     >
       {/* Card expandida */}
       {open && (

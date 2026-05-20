@@ -1,6 +1,6 @@
 // src/App.jsx
 import React, { useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Suspense } from 'react'
 import { useAuthStore } from './store/useStore'
 import { setToastRef } from './lib/api'
@@ -30,6 +30,27 @@ function AxiosToastBridge() {
   try { toast = useToast() } catch {}
   useEffect(() => { if (toast) setToastRef(toast) }, [])
   return null
+}
+
+// Rutas donde los widgets flotantes NO deben aparecer
+const HIDDEN_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password', '/dashboard']
+
+function FloatingWidgets() {
+  const location = useLocation()
+  const path = location.pathname
+
+  // Ocultar en auth y dashboard
+  const isHidden = HIDDEN_ROUTES.some(r => path.startsWith(r))
+  if (isHidden) return null
+
+  return (
+    <>
+      <WhatsAppButton />
+      <MarketplaceSidebar />
+      <TraeNosWidget />
+      <JuegoButton />
+    </>
+  )
 }
 
 function AppInner() {
@@ -84,14 +105,8 @@ function AppInner() {
           </Suspense>
         </main>
       </div>
-      {/* WhatsApp flotante — siempre visible */}
-      <WhatsAppButton />
-      {/* Sidebar Marketplace */}
-      <MarketplaceSidebar />
-      {/* Widget TraeNos */}
-      <TraeNosWidget />
-      {/* Botón juego */}
-      <JuegoButton />
+      {/* Widgets flotantes — se ocultan en rutas de auth y dashboard */}
+      <FloatingWidgets />
     </BrowserRouter>
   )
 }

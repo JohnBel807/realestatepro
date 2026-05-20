@@ -16,7 +16,7 @@ export default function WhatsAppButton() {
       rel="noreferrer"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="fixed bottom-6 left-6 z-50 flex items-center gap-2 group"
+      className="fixed bottom-6 right-6 z-50 flex items-center gap-2 group"
       aria-label={t('whatsapp.tooltip')}
     >
       {/* Tooltip */}
