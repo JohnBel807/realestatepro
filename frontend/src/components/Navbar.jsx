@@ -66,7 +66,7 @@ export default function Navbar() {
             rel="noreferrer"
             className="text-sm font-medium text-stone-500 hover:text-amber-700 transition-colors flex items-center gap-1"
           >
-            🌿 La región
+            🌿 {t('nav.region')}
           </a>
         </nav>
 
@@ -122,7 +122,7 @@ export default function Navbar() {
             rel="noreferrer"
             className="block text-sm font-medium text-stone-500 hover:text-amber-700 transition-colors py-1"
           >
-            🌿 La región
+            🌿 {t('nav.region')}
           </a>
           <div className="pt-2 flex gap-2">
             <LangToggle />
