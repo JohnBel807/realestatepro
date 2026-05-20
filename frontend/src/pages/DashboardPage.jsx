@@ -30,7 +30,7 @@ const propertySchema = z.object({
   city: z.string().min(2, 'Ciudad requerida'),
   neighborhood: z.string().optional(),
   photos:    z.array(z.object({ url: z.string(), public_id: z.string().optional() })).default([]),
-  video_url: z.string().url('URL de YouTube inválida').optional().or(z.literal('')),
+  video_url: z.string().optional().or(z.literal('')),
 }).refine((d) => {
   if (d.listing_type === 'sale' || d.listing_type === 'rent_sale') {
     return d.price && d.price > 0
@@ -347,7 +347,7 @@ function EditPropertyModal({ property, onClose, onSaved }) {
     city:                  z.string().min(2, 'Ciudad requerida'),
     neighborhood:          z.string().optional(),
     photos:                z.array(z.object({ url: z.string(), public_id: z.string().optional() })).default([]),
-    video_url:             z.string().url('URL de YouTube inválida').optional().or(z.literal('')),
+    video_url:             z.string().optional().or(z.literal('')),
   })
 
   const {
