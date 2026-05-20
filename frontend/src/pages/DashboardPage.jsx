@@ -273,26 +273,26 @@ function PropertyForm({ onSuccess, onCancel }) {
           control={control}
           render={({ field }) => (
             <ImageUploader value={field.value} onChange={field.onChange} maxImages={10} />
-              {/* Video de YouTube */}
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-stone-700 mb-1">
-                  Video en YouTube <span className="text-stone-400 font-normal">(opcional)</span>
-                </label>
-                <input
-                  type="url"
-                  {...register('video_url')}
-                  placeholder="https://www.youtube.com/watch?v=..."
-                  className="input-base"
-                />
-                <p className="text-xs text-stone-400 mt-1">
-                  Pega el link del video de YouTube de tu propiedad
-                </p>
-                {errors.video_url && (
-                  <p className="text-xs text-rose-500 mt-1">{errors.video_url.message}</p>
-                )}
-              </div>
           )}
         />
+        {/* Video de YouTube */}
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-stone-700 mb-1">
+            Video en YouTube <span className="text-stone-400 font-normal">(opcional)</span>
+          </label>
+          <input
+            type="url"
+            {...register('video_url')}
+            placeholder="https://www.youtube.com/watch?v=..."
+            className="input-base"
+          />
+          <p className="text-xs text-stone-400 mt-1">
+            Pega el link del video de YouTube de tu propiedad
+          </p>
+          {errors.video_url && (
+            <p className="text-xs text-rose-500 mt-1">{errors.video_url.message}</p>
+          )}
+        </div>
       </section>
 
       {/* ── Ubicación ── */}
@@ -549,6 +549,7 @@ function EditPropertyModal({ property, onClose, onSaved }) {
               <Controller name="photos" control={control}
                 render={({ field }) => (
                   <ImageUploader value={field.value} onChange={field.onChange} maxImages={10} />
+                )} />
               {/* Video de YouTube */}
               <div className="mt-4">
                 <label className="block text-sm font-medium text-stone-700 mb-1">
@@ -567,7 +568,6 @@ function EditPropertyModal({ property, onClose, onSaved }) {
                   <p className="text-xs text-rose-500 mt-1">{errors.video_url.message}</p>
                 )}
               </div>
-                )} />
             </section>
 
             {/* Ubicación */}
