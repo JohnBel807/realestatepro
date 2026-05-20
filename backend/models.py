@@ -87,7 +87,8 @@ class Property(Base):
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
 
-    photos = Column(JSON, default=list)
+    photos     = Column(JSON, default=list)
+    video_url  = Column(String(500), nullable=True)   # YouTube URL o ID
     main_photo = Column(String(500), nullable=True)
     virtual_tour_url = Column(String(500), nullable=True)
 

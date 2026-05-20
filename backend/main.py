@@ -109,6 +109,8 @@ def _apply_schema_patches():
             patches.append("ALTER TABLE properties ADD COLUMN admin_fee FLOAT")
         if 'views_count' not in prop_cols:
             patches.append("ALTER TABLE properties ADD COLUMN views_count INTEGER DEFAULT 0")
+        if 'video_url' not in prop_cols:
+            patches.append("ALTER TABLE properties ADD COLUMN video_url VARCHAR(500)")
         if 'available_from' not in prop_cols:
             patches.append(
                 "ALTER TABLE properties ADD COLUMN available_from TIMESTAMPTZ"

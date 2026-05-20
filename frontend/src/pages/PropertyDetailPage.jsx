@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { propertiesAPI } from '../lib/api'
 import { TraeNosBotonPropiedad } from '../components/TraeNos'
+import YouTubeEmbed from '../components/YouTubeEmbed'
 import { formatPrice, formatPriceDual, formatRelativeDate, cloudinaryDetail } from '../lib/formatters'
 
 // Skeleton para la página de detalle

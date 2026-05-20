@@ -51,7 +51,9 @@ class PropertyBase(BaseModel):
     neighborhood: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
-    photos: List[str] = []
+    photos:     List[str] = []
+    video_url:  Optional[str] = None   # URL de YouTube (completa o ID)
+    video_url:  Optional[str] = None
     main_photo: Optional[str] = None
     features: List[str] = []
     is_furnished: bool = False
@@ -77,7 +79,9 @@ class PropertyUpdate(BaseModel):
     area_m2: Optional[float] = None
     bedrooms: Optional[int] = None
     bathrooms: Optional[int] = None
-    photos: Optional[List[str]] = None
+    photos:    Optional[List[str]] = None
+    video_url: Optional[str] = None
+    video_url: Optional[str] = None
     main_photo: Optional[str] = None
     features: Optional[List[str]] = None
     is_active: Optional[bool] = None

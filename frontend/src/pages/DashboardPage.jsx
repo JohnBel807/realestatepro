@@ -29,7 +29,8 @@ const propertySchema = z.object({
   address: z.string().min(5, 'Dirección requerida'),
   city: z.string().min(2, 'Ciudad requerida'),
   neighborhood: z.string().optional(),
-  photos: z.array(z.object({ url: z.string(), public_id: z.string().optional() })).default([]),
+  photos:    z.array(z.object({ url: z.string(), public_id: z.string().optional() })).default([]),
+  video_url: z.string().url('URL de YouTube inválida').optional().or(z.literal('')),
 }).refine((d) => {
   if (d.listing_type === 'sale' || d.listing_type === 'rent_sale') {
     return d.price && d.price > 0
@@ -272,6 +273,24 @@ function PropertyForm({ onSuccess, onCancel }) {
           control={control}
           render={({ field }) => (
             <ImageUploader value={field.value} onChange={field.onChange} maxImages={10} />
+              {/* Video de YouTube */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-stone-700 mb-1">
+                  Video en YouTube <span className="text-stone-400 font-normal">(opcional)</span>
+                </label>
+                <input
+                  type="url"
+                  {...register('video_url')}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="input-base"
+                />
+                <p className="text-xs text-stone-400 mt-1">
+                  Pega el link del video de YouTube de tu propiedad
+                </p>
+                {errors.video_url && (
+                  <p className="text-xs text-rose-500 mt-1">{errors.video_url.message}</p>
+                )}
+              </div>
           )}
         />
       </section>
@@ -328,6 +347,7 @@ function EditPropertyModal({ property, onClose, onSaved }) {
     city:                  z.string().min(2, 'Ciudad requerida'),
     neighborhood:          z.string().optional(),
     photos:                z.array(z.object({ url: z.string(), public_id: z.string().optional() })).default([]),
+    video_url:             z.string().url('URL de YouTube inválida').optional().or(z.literal('')),
   })
 
   const {
@@ -356,6 +376,7 @@ function EditPropertyModal({ property, onClose, onSaved }) {
       address:                property.address || '',
       city:                   property.city || '',
       neighborhood:           property.neighborhood || '',
+      video_url:              property.video_url || '',
       photos:                 (property.photos || []).map(url =>
         typeof url === 'string' ? { url, public_id: '' } : url
       ),
@@ -393,6 +414,7 @@ function EditPropertyModal({ property, onClose, onSaved }) {
         city:                   data.city,
         neighborhood:           data.neighborhood || null,
         photos:                 photoUrls,
+        video_url:              data.video_url || null,
         main_photo:             photoUrls[0] || property.main_photo || null,
       }
 
@@ -527,6 +549,24 @@ function EditPropertyModal({ property, onClose, onSaved }) {
               <Controller name="photos" control={control}
                 render={({ field }) => (
                   <ImageUploader value={field.value} onChange={field.onChange} maxImages={10} />
+              {/* Video de YouTube */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-stone-700 mb-1">
+                  Video en YouTube <span className="text-stone-400 font-normal">(opcional)</span>
+                </label>
+                <input
+                  type="url"
+                  {...register('video_url')}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="input-base"
+                />
+                <p className="text-xs text-stone-400 mt-1">
+                  Pega el link del video de YouTube de tu propiedad
+                </p>
+                {errors.video_url && (
+                  <p className="text-xs text-rose-500 mt-1">{errors.video_url.message}</p>
+                )}
+              </div>
                 )} />
             </section>
 
