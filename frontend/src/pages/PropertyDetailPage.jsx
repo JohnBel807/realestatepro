@@ -136,7 +136,7 @@ export default function PropertyDetailPage() {
     area_m2, bedrooms, bathrooms,
     parking_spots, property_type, address, city, neighborhood, latitude, longitude,
     photos, features, is_furnished, has_balcony, has_elevator, pet_friendly,
-    views_count, is_featured, created_at, owner, video_url,
+    views_count, is_featured, created_at, owner, video_url, area_construida_m2,
   } = property
 
   const isRent = listing_type === 'rent'

@@ -39,7 +39,7 @@ export default function PropertyCard({ property, onNavigate }) {
     rental_price,
     rental_includes_admin,
     admin_fee,
-    area_m2,
+    area_m2, area_construida_m2,
     bedrooms,
     bathrooms,
     city,

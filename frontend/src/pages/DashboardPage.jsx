@@ -21,7 +21,8 @@ const propertySchema = z.object({
   rental_min_months: z.coerce.number().int().min(1).optional(),
   rental_includes_admin: z.boolean().default(false),
   admin_fee: z.coerce.number().min(0).optional(),
-  area_m2: z.coerce.number().positive('El área debe ser mayor a 0'),
+  area_m2:            z.coerce.number().positive('El área total debe ser mayor a 0'),
+  area_construida_m2: z.coerce.number().positive().optional().or(z.literal('')),
   bedrooms: z.coerce.number().int().min(0).default(0),
   bathrooms: z.coerce.number().int().min(0).default(0),
   parking_spots: z.coerce.number().int().min(0).default(0),
@@ -254,7 +255,7 @@ function PropertyForm({ onSuccess, onCancel }) {
       <section className="bg-stone-50 rounded-xl p-4 border border-stone-200">
         <h3 className="text-[10px] font-medium uppercase tracking-wider text-stone-500 mb-3">Métricas</h3>
         <div className="grid grid-cols-2 gap-3">
-          <Field register={register} errors={errors} name="area_m2"
+          <Field register={register} errors={errors} name="area_m2" label="Área total m² *"
             label="Área m² *" type="number" placeholder="85" />
           <Field register={register} errors={errors} name="bedrooms"
             label="Habitaciones" type="number" />
@@ -339,6 +340,7 @@ function EditPropertyModal({ property, onClose, onSaved }) {
     rental_includes_admin: z.boolean().default(false),
     admin_fee:             z.coerce.number().min(0).optional(),
     area_m2:               z.coerce.number().positive('Área requerida'),
+    area_construida_m2:    z.coerce.number().positive().optional().or(z.literal('')),
     bedrooms:              z.coerce.number().int().min(0).default(0),
     bathrooms:             z.coerce.number().int().min(0).default(0),
     parking_spots:         z.coerce.number().int().min(0).default(0),
@@ -369,6 +371,7 @@ function EditPropertyModal({ property, onClose, onSaved }) {
       rental_includes_admin:  property.rental_includes_admin || false,
       admin_fee:              property.admin_fee || 0,
       area_m2:                property.area_m2 || 0,
+      area_construida_m2:     property.area_construida_m2 || '',
       bedrooms:               property.bedrooms || 0,
       bathrooms:              property.bathrooms || 0,
       parking_spots:          property.parking_spots || 0,
@@ -407,6 +410,7 @@ function EditPropertyModal({ property, onClose, onSaved }) {
         rental_includes_admin:  data.rental_includes_admin || false,
         admin_fee:              data.admin_fee ? Number(data.admin_fee) : null,
         area_m2:                Number(data.area_m2),
+        area_construida_m2:     data.area_construida_m2 ? Number(data.area_construida_m2) : null,
         bedrooms:               Number(data.bedrooms) || 0,
         bathrooms:              Number(data.bathrooms) || 0,
         parking_spots:          Number(data.parking_spots) || 0,
@@ -536,7 +540,8 @@ function EditPropertyModal({ property, onClose, onSaved }) {
             <section className="bg-stone-50 rounded-xl p-4 border border-stone-200">
               <h3 className="text-[10px] font-medium uppercase tracking-wider text-stone-500 mb-3">Métricas</h3>
               <div className="grid grid-cols-2 gap-3">
-                <Field register={register} errors={errors} name="area_m2" label="Área m² *" type="number" placeholder="85" />
+                <Field register={register} errors={errors} name="area_m2" label="Área total m² *" type="number" placeholder="5000" />
+                <Field register={register} errors={errors} name="area_construida_m2" label="Área construida m²" type="number" placeholder="120" />
                 <Field register={register} errors={errors} name="bedrooms" label="Habitaciones" type="number" />
                 <Field register={register} errors={errors} name="bathrooms" label="Baños" type="number" />
                 <Field register={register} errors={errors} name="parking_spots" label="Parqueaderos" type="number" />

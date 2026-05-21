@@ -41,7 +41,8 @@ class PropertyBase(BaseModel):
     listing_type: ListingType = ListingType.sale
     price: float
     price_currency: str = "COP"
-    area_m2: float
+    area_m2:            float
+    area_construida_m2: Optional[float] = None
     bedrooms: int = 0
     bathrooms: int = 0
     parking_spots: int = 0
@@ -76,7 +77,8 @@ class PropertyUpdate(BaseModel):
     description: Optional[str] = None
     listing_type: Optional[str] = None
     price: Optional[float] = None
-    area_m2: Optional[float] = None
+    area_m2:            Optional[float] = None
+    area_construida_m2: Optional[float] = None
     bedrooms: Optional[int] = None
     bathrooms: Optional[int] = None
     photos:    Optional[List[str]] = None
